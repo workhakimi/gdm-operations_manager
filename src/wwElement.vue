@@ -17,17 +17,14 @@
 
             <div class="review-content" :class="{ 'review-content--compact': hasPipeline }">
                 <!-- ── SECTION A: ATTACHED BOOKINGS ── -->
-                <section class="review-section">
-                    <button type="button" class="section-toggle" @click="toggleSection('bookings')">
-                        <h3 class="section-heading">
-                            <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-                            Attached Bookings
-                            <span class="section-count">{{ attachedBookings.length }}</span>
-                        </h3>
-                        <svg class="section-chevron" :class="{ 'section-chevron--open': !collapsedSections.bookings }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                    </button>
+                <section class="review-section review-section--embedded">
+                    <h3 class="section-heading">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                        Attached Bookings
+                        <span class="section-count">{{ attachedBookings.length }}</span>
+                    </h3>
 
-                    <div v-show="!collapsedSections.bookings" class="section-body">
+                    <div class="section-body">
                         <div v-if="attachedBookings.length === 0" class="bookings-empty">
                             <p class="bookings-empty-text">No bookings attached to this order plan.</p>
                         </div>
@@ -94,16 +91,13 @@
                 </section>
 
                 <!-- ── SECTION B: ORDER METADATA ── -->
-                <section class="review-section">
-                    <button type="button" class="section-toggle" @click="toggleSection('metadata')">
-                        <h3 class="section-heading">
-                            <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                            Order Metadata
-                        </h3>
-                        <svg class="section-chevron" :class="{ 'section-chevron--open': !collapsedSections.metadata }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                    </button>
+                <section class="review-section review-section--embedded">
+                    <h3 class="section-heading">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                        Order Metadata
+                    </h3>
 
-                    <div v-show="!collapsedSections.metadata" class="section-body">
+                    <div class="section-body">
                         <div class="meta-card">
                             <div class="meta-grid">
                                 <div class="meta-field meta-field--full">
@@ -242,7 +236,13 @@
                                 <!-- Col 2: Batch Assignment -->
                                 <div class="cell-batch">
                                     <span class="cell-label">BATCH DOCUMENT</span>
-                                    <input type="text" class="bd-input" v-model="batch.bd_number" placeholder="Enter BD #..." />
+                                    <div class="input-with-btn">
+                                        <input type="text" class="bd-input" v-model="batch.bd_number" placeholder="Enter BD #..." />
+                                        <button type="button" class="btn-field-update" :class="{ 'btn--attempting': pendingAction === 'update' }" :disabled="isAttempting" @click="handleUpdatePipeline" title="Update BD number">
+                                            <span v-if="pendingAction === 'update'" class="spinner"></span>
+                                            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <!-- Arrow 1 -->
@@ -276,7 +276,13 @@
                                         <span class="doc-node-title">Client DO</span>
                                         <span class="doc-node-sub">{{ batch.customization_type }}</span>
                                     </div>
-                                    <input type="text" class="do-link-input" v-model="batch.client_do_link" placeholder="Paste DO link..." />
+                                    <div class="input-with-btn">
+                                        <input type="text" class="do-link-input" v-model="batch.client_do_link" placeholder="Paste DO link..." />
+                                        <button type="button" class="btn-field-update" :class="{ 'btn--attempting': pendingAction === 'update' }" :disabled="isAttempting" @click="handleUpdatePipeline" title="Update DO link">
+                                            <span v-if="pendingAction === 'update'" class="spinner"></span>
+                                            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -313,23 +319,13 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Update Pipeline Button -->
-                <div class="update-pipeline-wrap">
-                    <span v-if="isPipelineDirty" class="dirty-hint">Unsaved changes</span>
-                    <button type="button" class="btn-update-pipeline" :class="{ 'btn--attempting': pendingAction === 'update', 'btn-update-pipeline--dirty': isPipelineDirty }" :disabled="isAttempting" @click="handleUpdatePipeline">
-                        <span v-if="pendingAction === 'update'" class="spinner"></span>
-                        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                        {{ pendingAction === 'update' ? 'Updating...' : 'Update Pipeline' }}
-                    </button>
-                </div>
             </div>
         </div>
     </div>
 </template>
 
 <script>
-import { ref, reactive, computed, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 
 const LABOR_LABELS = {
     sleeving: 'Box Sleeving',
@@ -413,23 +409,6 @@ export default {
             if (!localPipeline.value || !savedSnapshot.value) return false;
             return JSON.stringify(localPipeline.value) !== savedSnapshot.value;
         });
-
-        // ── Collapsible sections ──
-        const collapsedSections = reactive({ bookings: false, metadata: false });
-
-        watch(hasPipeline, (has) => {
-            if (has) {
-                collapsedSections.bookings = true;
-                collapsedSections.metadata = true;
-            } else {
-                collapsedSections.bookings = false;
-                collapsedSections.metadata = false;
-            }
-        }, { immediate: true });
-
-        function toggleSection(key) {
-            collapsedSections[key] = !collapsedSections[key];
-        }
 
         // ── Pipeline render resolvers ──
         const orderplanLinesByItemDelivery = computed(() => {
@@ -633,7 +612,6 @@ export default {
         return {
             currentHeader, currentDeliveries, attachedBookings,
             hasPipeline, pipelineDestinations, getResolvedItems, isPipelineDirty,
-            collapsedSections, toggleSection,
             getTeammateName, formatDate, formatDeadline, statusKey, laborDisplay,
             handleStatusChange, handleCreatePipeline, handleUpdatePipeline, handleRetry,
             pendingAction, isAttempting, actionFailed, actionFailedLabel,
@@ -696,16 +674,14 @@ $teal-50: #f0fdfa;
 .ops-content { display: flex; flex-direction: column; }
 .review-content { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 24px 20px 40px; display: flex; flex-direction: column; gap: 20px; }
 .review-content--compact { padding-bottom: 16px; gap: 12px; }
-.review-section { display: flex; flex-direction: column; gap: 0; }
+.review-section { display: flex; flex-direction: column; gap: 0; min-width: 0; }
+.review-section--embedded { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.review-section--embedded .section-heading { margin-bottom: 12px; flex-shrink: 0; }
+.review-section--embedded .section-body { flex: 1 1 auto; min-height: 0; overflow: visible; }
 .section-heading { font-size: 11px; font-weight: 700; color: $gray-500; text-transform: uppercase; letter-spacing: 0.06em; margin: 0; display: flex; align-items: center; gap: 6px; }
 .section-icon { width: 15px; height: 15px; flex-shrink: 0; }
 .section-count { font-size: 10px; font-weight: 700; background: $gray-200; color: $gray-600; padding: 1px 6px; border-radius: 8px; margin-left: 2px; }
-
-/* ── Section Toggle ── */
-.section-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 12px; background: $white; border: 1px solid $gray-200; border-radius: $radius; cursor: pointer; transition: all $transition; &:hover { background: $gray-50; border-color: $gray-300; } }
-.section-chevron { width: 16px; height: 16px; color: $gray-400; flex-shrink: 0; transition: transform 0.2s ease; transform: rotate(-90deg); }
-.section-chevron--open { transform: rotate(0deg); }
-.section-body { margin-top: 10px; }
+.section-body { margin-top: 0; }
 
 /* ── Section Subheading ── */
 .section-subheading { font-size: 10px; font-weight: 700; color: $gray-400; text-transform: uppercase; letter-spacing: 0.06em; margin: 16px 0 8px; display: flex; align-items: center; gap: 6px; }
@@ -787,11 +763,11 @@ $teal-50: #f0fdfa;
 .btn-create-pipeline { display: flex; align-items: center; gap: 8px; padding: 14px 32px; font-size: 14px; font-weight: 700; font-family: $font; color: $white; background: $gray-800; border: none; border-radius: $radius; cursor: pointer; transition: all $transition; svg { width: 18px; height: 18px; } &:hover { background: $gray-900; box-shadow: 0 4px 12px rgba(0,0,0,0.15); } &:disabled { opacity: 0.5; cursor: not-allowed; } }
 .btn--attempting { opacity: 0.7; cursor: wait; pointer-events: none; }
 
-/* ── Update Pipeline Button ── */
-.update-pipeline-wrap { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 16px 20px 24px; }
-.dirty-hint { font-size: 11px; font-weight: 600; color: $amber; }
-.btn-update-pipeline { display: flex; align-items: center; gap: 8px; padding: 10px 24px; font-size: 13px; font-weight: 700; font-family: $font; color: $white; background: $gray-400; border: none; border-radius: $radius-sm; cursor: pointer; transition: all $transition; svg { width: 16px; height: 16px; } &:hover { background: $gray-500; } &:disabled { opacity: 0.5; cursor: not-allowed; } }
-.btn-update-pipeline--dirty { background: $blue; &:hover { background: $blue-dark; box-shadow: 0 2px 8px rgba($blue, 0.25); } }
+/* ── Per-field Update Buttons ── */
+.input-with-btn { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.input-with-btn .bd-input { flex: 1; min-width: 0; }
+.input-with-btn .do-link-input { flex: 1; min-width: 0; }
+.btn-field-update { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; background: $blue; color: $white; border: none; border-radius: $radius-xs; cursor: pointer; transition: all $transition; svg { width: 14px; height: 14px; } &:hover { background: $blue-dark; } &:disabled { opacity: 0.5; cursor: not-allowed; } }
 
 /* ═══════════════════════════════════════════
    PIPELINE MODE
@@ -836,9 +812,9 @@ $teal-50: #f0fdfa;
 .pq-label { display: block; font-size: 8px; font-weight: 700; color: $gray-400; text-transform: uppercase; letter-spacing: 0.05em; }
 
 /* ── Col 2: Batch Assignment ── */
-.cell-batch { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; min-width: 140px; }
+.cell-batch { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; min-width: 160px; }
 .cell-label { font-size: 9px; font-weight: 700; color: $gray-400; text-transform: uppercase; letter-spacing: 0.04em; }
-.bd-input { height: 36px; width: 140px; padding: 0 10px; border: 1.5px solid $gray-200; border-radius: $radius-sm; font-size: 12px; font-family: $font; color: $gray-900; background: $white; outline: none; transition: border-color $transition, box-shadow $transition; &::placeholder { color: $gray-400; } &:focus { border-color: $blue; box-shadow: 0 0 0 3px rgba($blue, 0.08); } }
+.bd-input { height: 36px; min-width: 100px; padding: 0 10px; border: 1.5px solid $gray-200; border-radius: $radius-sm; font-size: 12px; font-family: $font; color: $gray-900; background: $white; outline: none; transition: border-color $transition, box-shadow $transition; &::placeholder { color: $gray-400; } &:focus { border-color: $blue; box-shadow: 0 0 0 3px rgba($blue, 0.08); } }
 
 /* ── Flow Arrow ── */
 .flow-arrow { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; padding: 0 4px; color: $gray-300; svg { width: 20px; height: 20px; } }
@@ -851,13 +827,13 @@ $teal-50: #f0fdfa;
 .cust-labor { font-size: 11px; color: $gray-500; }
 
 /* ── Col 4: Documentation ── */
-.cell-doc { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; }
+.cell-doc { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; min-width: 140px; }
 .doc-card-node { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 20px; border: 1.5px solid $gray-200; border-radius: $radius; background: $white; min-width: 100px; transition: border-color $transition; text-decoration: none; &:hover { border-color: $gray-300; } }
 .doc-card-node--linked { border-color: $blue; &:hover { border-color: $blue-dark; } .doc-node-title { color: $blue; } }
 .doc-node-icon { width: 24px; height: 24px; color: $gray-500; }
 .doc-node-title { font-size: 11px; font-weight: 700; color: $gray-800; }
 .doc-node-sub { font-size: 9px; color: $gray-400; }
-.do-link-input { width: 100%; height: 28px; padding: 0 8px; border: 1px solid $gray-200; border-radius: $radius-xs; font-size: 10px; font-family: $font; color: $gray-700; background: $white; outline: none; transition: border-color $transition; &::placeholder { color: $gray-400; } &:focus { border-color: $blue; } }
+.do-link-input { height: 28px; padding: 0 8px; border: 1px solid $gray-200; border-radius: $radius-xs; font-size: 10px; font-family: $font; color: $gray-700; background: $white; outline: none; transition: border-color $transition; &::placeholder { color: $gray-400; } &:focus { border-color: $blue; } }
 
 /* ── Col 5: Destination Sidebar ── */
 .dest-sidebar { width: 220px; flex-shrink: 0; }
