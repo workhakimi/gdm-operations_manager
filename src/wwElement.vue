@@ -156,7 +156,7 @@
                             <svg class="mismatch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                             <span class="mismatch-title">Order plan has been updated</span>
                         </div>
-                        <span class="mismatch-sub">Pipeline structure may be out of sync with current order plan.</span>
+                        <span class="mismatch-sub">Pipeline structure may be out of sync with current order plan. Items may show as removed or missing. Click below to regenerate structure from current order plan (keeps pipeline ID).</span>
                     </div>
                     <div v-if="structureMismatch.missingDeliveries.length || structureMismatch.missingBookingItems.length || structureMismatch.missingBookingHeaders.length || structureMismatch.addedInOrderPlan.length" class="mismatch-details">
                         <span v-if="structureMismatch.missingDeliveries.length" class="mismatch-badge mismatch-badge--missing">
@@ -174,8 +174,8 @@
                     </div>
                     <button type="button" class="btn-update-structure" :class="{ 'btn--attempting': pendingAction === 'update' }" :disabled="isAttempting" @click="handleUpdateStructure">
                         <span v-if="pendingAction === 'update'" class="spinner"></span>
-                        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                        {{ pendingAction === 'update' ? 'Updating...' : 'Update structure' }}
+                        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        {{ pendingAction === 'update' ? 'Regenerating...' : 'Regenerate structure' }}
                     </button>
                 </div>
 
@@ -196,6 +196,11 @@
 
                 <!-- Pipeline Body -->
                 <div class="pipeline-body">
+                    <div v-if="structureMismatch && structureMismatch.addedInOrderPlan.length > 0" class="pipeline-added-hint">
+                        <span class="pipeline-added-hint-icon">+</span>
+                        <span>{{ structureMismatch.addedInOrderPlan.length }} item(s) in order plan not in pipeline</span>
+                        <span class="pipeline-added-hint-action">— Click "Regenerate structure" above to sync.</span>
+                    </div>
                     <div v-if="pipelineDestinations.length === 0" class="pipeline-empty">
                         <p class="pipeline-empty-text">No batches in this pipeline. Delivery or item references may be missing.</p>
                     </div>
@@ -204,14 +209,18 @@
                         <div class="dest-content">
                             <div v-for="(batch, bIdx) in dest.batches" :key="bIdx" class="batch-row" :class="{ 'batch-row--border': bIdx < dest.batches.length - 1 }">
                                 <!-- Col 1: Allocated Items -->
-                                <div class="cell-allocated">
+                                <div class="cell-allocated" :class="{ 'cell-allocated--delivery-missing': isBatchDeliveryMissing(batch) }">
                                     <span class="batch-type-badge">BATCH: {{ (batch.customization_type || 'NONE').toUpperCase() }}</span>
-                                    <div v-for="item in getResolvedItems(batch)" :key="item.booking_items_id" class="p-item">
+                                    <div v-for="item in getResolvedItems(batch)" :key="item.booking_items_id" class="p-item" :class="{ 'p-item--ghost': item._itemStatus === 'removed' }">
                                         <img v-if="item.product_image" :src="item.product_image" :alt="item.product_name" class="p-item-thumb" />
+                                        <div v-else class="p-item-thumb-placeholder">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                                        </div>
                                         <div class="p-item-info">
                                             <div class="p-item-name">{{ item.product_name }}</div>
                                             <div class="p-item-sku">{{ item.sku }}</div>
                                             <span v-if="item.labor" class="p-item-labor">+ {{ laborDisplay(item.labor) }}</span>
+                                            <span v-if="item._itemStatus === 'removed'" class="p-item-discrepancy p-item-discrepancy--removed">Removed from order plan</span>
                                         </div>
                                         <div class="p-item-qty">
                                             <span class="pq-num" :class="{ 'pq-full': item.quantity_allocated >= item.quantity_total }">{{ item.quantity_allocated }}</span><span class="pq-total">/ {{ item.quantity_total }}</span>
@@ -449,6 +458,8 @@ export default {
                 missingBookingItems: [...new Set(missingBookingItems)],
                 missingBookingHeaders: [...new Set(missingBookingHeaders)],
                 addedInOrderPlan,
+                missingDeliveryIdsSet: new Set(missingDeliveries),
+                missingBookingItemIdsSet: new Set(missingBookingItems),
             } : null;
         });
 
@@ -463,9 +474,10 @@ export default {
             return m;
         });
 
-        function resolveItemForPipeline(ref, deliveryId) {
+        function resolveItemForPipeline(ref, deliveryId, isRemovedRef) {
             const bookingItemsId = typeof ref === 'string' ? ref : ref.booking_items_id;
             const labor = (typeof ref === 'object' && ref?.labor) ? ref.labor : null;
+            const removed = isRemovedRef ?? structureMismatch.value?.missingBookingItemIdsSet?.has(bookingItemsId);
             const bi = bookingItemLookup.value[bookingItemsId];
             const inv = bi ? inventoryLookup.value[bi.sku] : null;
             const qtyAllocated = orderplanLinesByItemDelivery.value[`${bookingItemsId}::${deliveryId}`] || 0;
@@ -478,6 +490,7 @@ export default {
                 quantity_total: bi?.quantity || 0,
                 status: bi?.status || 'Booked',
                 labor,
+                _itemStatus: removed ? 'removed' : 'ok',
             };
         }
 
@@ -493,7 +506,11 @@ export default {
         });
 
         function getResolvedItems(batch) {
-            return (batch.attached || []).map(ref => resolveItemForPipeline(ref, batch.orderplan_deliveries_id));
+            const missingSet = structureMismatch.value?.missingBookingItemIdsSet;
+            return (batch.attached || []).map(ref => resolveItemForPipeline(ref, batch.orderplan_deliveries_id, missingSet?.has(ref.booking_items_id)));
+        }
+        function isBatchDeliveryMissing(batch) {
+            return !!structureMismatch.value?.missingDeliveryIdsSet?.has(batch.orderplan_deliveries_id);
         }
 
         // ── Attached bookings for review mode ──
@@ -636,7 +653,25 @@ export default {
         }
 
         function handleUpdateStructure() {
-            handleUpdatePipeline();
+            /* wwEditor:start */
+            if (props.wwEditorState?.isEditing) return;
+            /* wwEditor:end */
+            if (!currentPipeline.value) return;
+            const rebuilt = buildStructureData();
+            if (!rebuilt) return;
+            localPipeline.value = rebuilt;
+            pendingAction.value = 'update';
+            actionFailed.value = false;
+            emit('trigger-event', {
+                name: 'onUpdatePipeline',
+                event: {
+                    value: {
+                        pipeline_id: currentPipeline.value.id,
+                        orderplan_headers_id: selectedId.value,
+                        structure_data: rebuilt,
+                    },
+                },
+            });
         }
 
         function handleRetry() {
@@ -664,7 +699,7 @@ export default {
 
         return {
             currentHeader, currentDeliveries, attachedBookings,
-            hasPipeline, pipelineDestinations, getResolvedItems, isPipelineDirty,
+            hasPipeline, pipelineDestinations, getResolvedItems, isBatchDeliveryMissing, isPipelineDirty,
             structureMismatch,
             getTeammateName, formatDate, formatDeadline, statusKey, laborDisplay,
             handleStatusChange, handleCreatePipeline, handleUpdatePipeline, handleUpdateStructure, handleRetry,
@@ -723,10 +758,10 @@ $teal-50: #f0fdfa;
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ═══════════════════════════════════════════
-   MAIN CONTENT
+   MAIN CONTENT (unified width for sections A, B and C)
    ═══════════════════════════════════════════ */
-.ops-content { display: flex; flex-direction: column; min-width: 0; width: 100%; }
-.review-content { flex: 1; max-width: 960px; width: 100%; min-width: 0; margin: 0 auto; padding: 24px 20px 40px; display: flex; flex-direction: column; gap: 20px; }
+.ops-content { display: flex; flex-direction: column; min-width: 0; width: 100%; max-width: 1280px; margin: 0 auto; }
+.review-content { flex: 1; width: 100%; min-width: 0; padding: 24px 20px 40px; display: flex; flex-direction: column; gap: 20px; }
 .review-content--compact { padding-bottom: 16px; gap: 12px; }
 .review-section { display: flex; flex-direction: column; gap: 0; min-width: 0; width: 100%; }
 .review-section--embedded { display: flex; flex-direction: column; flex: 0 0 auto; min-height: 0; }
@@ -841,6 +876,9 @@ $teal-50: #f0fdfa;
 
 /* ── Pipeline Body ── */
 .pipeline-body { padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.pipeline-added-hint { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: $blue-50; border: 1px dashed $blue; border-radius: $radius-sm; font-size: 12px; color: $gray-700; }
+.pipeline-added-hint-icon { font-weight: 800; color: $blue; }
+.pipeline-added-hint-action { color: $gray-500; font-size: 11px; }
 .pipeline-empty { padding: 40px; text-align: center; background: $white; border: 2px dashed $gray-200; border-radius: $radius; }
 .pipeline-empty-text { font-size: 13px; color: $gray-500; margin: 0; }
 
@@ -857,7 +895,12 @@ $teal-50: #f0fdfa;
 .batch-type-badge { display: inline-flex; align-self: flex-start; padding: 3px 10px; border-radius: $radius-xs; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; background: $teal-50; color: $teal; border: 1px solid rgba($teal, 0.15); }
 .p-item { display: flex; align-items: center; gap: 10px; }
 .p-item-thumb { width: 32px; height: 32px; border-radius: $radius-xs; object-fit: cover; border: 1px solid $gray-200; flex-shrink: 0; }
+.p-item-thumb-placeholder { width: 32px; height: 32px; border-radius: $radius-xs; background: $gray-100; display: flex; align-items: center; justify-content: center; flex-shrink: 0; svg { width: 16px; height: 16px; color: $gray-400; } }
 .p-item-info { flex: 1; min-width: 0; }
+.p-item--ghost { opacity: 0.65; .p-item-name, .p-item-sku { text-decoration: line-through; color: $gray-500; } }
+.p-item-discrepancy { display: inline-block; margin-top: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+.p-item-discrepancy--removed { color: $red-dark; background: $red-50; padding: 2px 6px; border-radius: $radius-xs; }
+.cell-allocated--delivery-missing { border-left: 3px solid $amber; padding-left: 8px; margin-left: -8px; }
 .p-item-name { font-size: 12px; font-weight: 600; color: $gray-900; overflow: hidden; text-overflow: ellipsis; }
 .p-item-sku { font-size: 10px; color: $gray-500; font-family: 'SF Mono', 'Fira Code', monospace; }
 .p-item-labor { display: inline-block; margin-top: 3px; font-size: 9px; font-weight: 700; color: $teal; background: $teal-50; border: 1px solid rgba($teal, 0.15); padding: 1px 6px; border-radius: $radius-xs; }
