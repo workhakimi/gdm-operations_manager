@@ -15,8 +15,55 @@
                 <span class="failed-retry">Click to try again</span>
             </div>
 
+            <!-- Order Plan Header (above sections A & B) -->
+            <div class="section-header-bar section-header-bar--order-plan">
+                <span class="opid-badge">{{ currentHeader?.opid }}</span>
+                <span class="section-header-title">{{ currentHeader?.title }}</span>
+            </div>
+
             <div class="review-content" :class="{ 'review-content--compact': hasPipeline }">
-                <!-- ── SECTION A: ATTACHED BOOKINGS ── -->
+                <!-- ── SECTION A: ORDER METADATA ── -->
+                <section class="review-section review-section--embedded">
+                    <h3 class="section-heading">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                        Order Metadata
+                    </h3>
+
+                    <div class="section-body">
+                        <div class="meta-card">
+                            <div class="meta-grid">
+                                <div class="meta-field meta-field--full">
+                                    <label class="field-label">ORDER PLAN TITLE</label>
+                                    <div class="meta-value-box">{{ currentHeader.title || '-' }}</div>
+                                </div>
+                                <div class="meta-field">
+                                    <label class="field-label">QUOTE REFERENCE</label>
+                                    <div class="meta-value-box">{{ currentHeader.quoteref || '-' }}</div>
+                                </div>
+                                <div class="meta-field">
+                                    <label class="field-label">INVOICE REFERENCE</label>
+                                    <div class="meta-value-box">{{ currentHeader.invoiceref || '-' }}</div>
+                                </div>
+                                <div class="meta-field">
+                                    <label class="field-label">PIC (BDA)</label>
+                                    <div class="meta-value-box meta-value-box--select">
+                                        <span>{{ getTeammateName(currentHeader.pic_bda) || 'Not assigned' }}</span>
+                                        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                                    </div>
+                                </div>
+                                <div class="meta-field">
+                                    <label class="field-label">PIC (OPS)</label>
+                                    <div class="meta-value-box meta-value-box--select">
+                                        <span>{{ getTeammateName(currentHeader.pic_ops) || 'Not assigned' }}</span>
+                                        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── SECTION B: ATTACHED BOOKINGS ── -->
                 <section class="review-section review-section--embedded">
                     <h3 class="section-heading">
                         <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
@@ -90,47 +137,6 @@
                     </div>
                 </section>
 
-                <!-- ── SECTION B: ORDER METADATA ── -->
-                <section class="review-section review-section--embedded">
-                    <h3 class="section-heading">
-                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                        Order Metadata
-                    </h3>
-
-                    <div class="section-body">
-                        <div class="meta-card">
-                            <div class="meta-grid">
-                                <div class="meta-field meta-field--full">
-                                    <label class="field-label">ORDER PLAN TITLE</label>
-                                    <div class="meta-value-box">{{ currentHeader.title || '-' }}</div>
-                                </div>
-                                <div class="meta-field">
-                                    <label class="field-label">QUOTE REFERENCE</label>
-                                    <div class="meta-value-box">{{ currentHeader.quoteref || '-' }}</div>
-                                </div>
-                                <div class="meta-field">
-                                    <label class="field-label">INVOICE REFERENCE</label>
-                                    <div class="meta-value-box">{{ currentHeader.invoiceref || '-' }}</div>
-                                </div>
-                                <div class="meta-field">
-                                    <label class="field-label">PIC (BDA)</label>
-                                    <div class="meta-value-box meta-value-box--select">
-                                        <span>{{ getTeammateName(currentHeader.pic_bda) || 'Not assigned' }}</span>
-                                        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                                    </div>
-                                </div>
-                                <div class="meta-field">
-                                    <label class="field-label">PIC (OPS)</label>
-                                    <div class="meta-value-box meta-value-box--select">
-                                        <span>{{ getTeammateName(currentHeader.pic_ops) || 'Not assigned' }}</span>
-                                        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
                 <!-- ── SECTION C: CREATE PIPELINE BUTTON ── -->
                 <div v-if="!hasPipeline" class="create-pipeline-wrap">
                     <button type="button" class="btn-create-pipeline" :class="{ 'btn--attempting': pendingAction === 'create' }" :disabled="isAttempting" @click="handleCreatePipeline">
@@ -143,10 +149,9 @@
 
             <!-- ═══════════ PIPELINE VIEW ═══════════ -->
             <div v-if="hasPipeline" class="pipeline-mode">
-                <!-- Header Bar -->
-                <div class="pipeline-header-bar">
-                    <span class="opid-badge">{{ currentHeader?.opid }}</span>
-                    <span class="pipeline-title-text">{{ currentHeader?.title }}</span>
+                <!-- Pipeline Section Header -->
+                <div class="section-header-bar section-header-bar--pipeline">
+                    <span class="section-header-title">Order Pipeline Manager</span>
                 </div>
 
                 <!-- Structure Mismatch Banner (order plan updated) -->
@@ -845,10 +850,10 @@ $teal-50: #f0fdfa;
    ═══════════════════════════════════════════ */
 .pipeline-mode { display: flex; flex-direction: column; }
 
-/* ── Header Bar ── */
-.pipeline-header-bar { display: flex; align-items: center; gap: 12px; padding: 14px 24px; background: $gray-800; color: $white; }
+/* ── Section Header Bars (dark blue) ── */
+.section-header-bar { display: flex; align-items: center; gap: 12px; padding: 14px 24px; background: $gray-800; color: $white; }
 .opid-badge { font-size: 11px; font-weight: 700; background: rgba($white, 0.12); padding: 4px 10px; border-radius: $radius-xs; font-family: 'SF Mono', 'Fira Code', monospace; letter-spacing: 0.02em; }
-.pipeline-title-text { font-size: 14px; font-weight: 600; }
+.section-header-title { font-size: 14px; font-weight: 600; }
 
 /* ── Structure Mismatch Banner ── */
 .structure-mismatch-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 20px; background: $amber-50; border-bottom: 1px solid rgba($amber, 0.2); min-width: 0; }
@@ -976,7 +981,7 @@ $teal-50: #f0fdfa;
     .structure-mismatch-banner { flex-direction: column; align-items: stretch; padding: 12px 16px; gap: 10px; }
     .btn-update-structure { align-self: stretch; min-height: 44px; justify-content: center; }
     .btn-create-pipeline { width: 100%; justify-content: center; }
-    .pipeline-header-bar { padding: 12px 16px; flex-wrap: wrap; }
+    .section-header-bar { padding: 12px 16px; flex-wrap: wrap; }
 }
 
 /* Booking items table on small screens */
@@ -1000,7 +1005,7 @@ $teal-50: #f0fdfa;
     .review-content { padding: 10px 10px 20px; }
     .action-failed-bar { padding: 10px 14px; flex-wrap: wrap; }
     .opid-badge { font-size: 10px; }
-    .pipeline-title-text { font-size: 13px; word-break: break-word; }
+    .section-header-title { font-size: 13px; word-break: break-word; }
     .dest-card { padding: 14px 12px; }
 }
 </style>
