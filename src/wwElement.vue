@@ -195,6 +195,36 @@
                     <span class="pipeline-title-text">{{ currentHeader?.title }}</span>
                 </div>
 
+                <!-- Structure Mismatch Banner (order plan updated) -->
+                <div v-if="structureMismatch" class="structure-mismatch-banner">
+                    <div class="mismatch-header">
+                        <div class="mismatch-title-row">
+                            <svg class="mismatch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            <span class="mismatch-title">Order plan has been updated</span>
+                        </div>
+                        <span class="mismatch-sub">Pipeline structure may be out of sync with current order plan.</span>
+                    </div>
+                    <div v-if="structureMismatch.missingDeliveries.length || structureMismatch.missingBookingItems.length || structureMismatch.missingBookingHeaders.length || structureMismatch.addedInOrderPlan.length" class="mismatch-details">
+                        <span v-if="structureMismatch.missingDeliveries.length" class="mismatch-badge mismatch-badge--missing">
+                            {{ structureMismatch.missingDeliveries.length }} missing delivery ref(s)
+                        </span>
+                        <span v-if="structureMismatch.missingBookingItems.length" class="mismatch-badge mismatch-badge--missing">
+                            {{ structureMismatch.missingBookingItems.length }} missing item ref(s)
+                        </span>
+                        <span v-if="structureMismatch.missingBookingHeaders.length" class="mismatch-badge mismatch-badge--missing">
+                            {{ structureMismatch.missingBookingHeaders.length }} missing booking ref(s)
+                        </span>
+                        <span v-if="structureMismatch.addedInOrderPlan.length" class="mismatch-badge mismatch-badge--added">
+                            {{ structureMismatch.addedInOrderPlan.length }} new in order plan
+                        </span>
+                    </div>
+                    <button type="button" class="btn-update-structure" :class="{ 'btn--attempting': pendingAction === 'update' }" :disabled="isAttempting" @click="handleUpdateStructure">
+                        <span v-if="pendingAction === 'update'" class="spinner"></span>
+                        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        {{ pendingAction === 'update' ? 'Updating...' : 'Update structure' }}
+                    </button>
+                </div>
+
                 <!-- Column Headers -->
                 <div class="pipeline-col-headers">
                     <div class="col-headers-main">
@@ -410,6 +440,61 @@ export default {
             return JSON.stringify(localPipeline.value) !== savedSnapshot.value;
         });
 
+        // ── Structure mismatch (order plan updated, references out of sync) ──
+        const structureMismatch = computed(() => {
+            if (!localPipeline.value || !Array.isArray(localPipeline.value)) return null;
+            const validDeliveryIds = new Set(currentDeliveries.value.map(d => d.id));
+            const validBookingItemIds = new Set(currentLines.value.map(l => l.bookingitems_headerid));
+            const validBookingHeaderIds = new Set(currentAttBookings.value.map(ab => ab.booking_headerid));
+
+            const structureItemKeys = new Set();
+            for (const batch of localPipeline.value) {
+                for (const ref of batch.attached || []) {
+                    structureItemKeys.add(`${ref.booking_items_id}::${batch.orderplan_deliveries_id}`);
+                }
+            }
+
+            const missingDeliveries = [];
+            const missingBookingItems = [];
+            const missingBookingHeaders = [];
+            const addedInOrderPlan = [];
+
+            for (const batch of localPipeline.value) {
+                if (batch.orderplan_deliveries_id && !validDeliveryIds.has(batch.orderplan_deliveries_id)) {
+                    missingDeliveries.push(batch.orderplan_deliveries_id);
+                }
+                for (const ref of batch.attached || []) {
+                    if (ref.booking_items_id && !validBookingItemIds.has(ref.booking_items_id)) {
+                        missingBookingItems.push(ref.booking_items_id);
+                    }
+                    if (ref.booking_headers_id && !validBookingHeaderIds.has(ref.booking_headers_id)) {
+                        missingBookingHeaders.push(ref.booking_headers_id);
+                    }
+                }
+            }
+
+            for (const line of currentLines.value) {
+                const key = `${line.bookingitems_headerid}::${line.deliveries_headerid}`;
+                if (!structureItemKeys.has(key)) {
+                    addedInOrderPlan.push({
+                        booking_items_id: line.bookingitems_headerid,
+                        deliveries_headerid: line.deliveries_headerid,
+                        sku: bookingItemLookup.value[line.bookingitems_headerid]?.sku,
+                    });
+                }
+            }
+
+            const hasMismatch = missingDeliveries.length > 0 || missingBookingItems.length > 0 ||
+                missingBookingHeaders.length > 0 || addedInOrderPlan.length > 0;
+
+            return hasMismatch ? {
+                missingDeliveries: [...new Set(missingDeliveries)],
+                missingBookingItems: [...new Set(missingBookingItems)],
+                missingBookingHeaders: [...new Set(missingBookingHeaders)],
+                addedInOrderPlan,
+            } : null;
+        });
+
         // ── Pipeline render resolvers ──
         const orderplanLinesByItemDelivery = computed(() => {
             const m = {};
@@ -586,6 +671,10 @@ export default {
             });
         }
 
+        function handleUpdateStructure() {
+            handleUpdatePipeline();
+        }
+
         function handleRetry() {
             actionFailed.value = false;
             pendingAction.value = null;
@@ -612,8 +701,9 @@ export default {
         return {
             currentHeader, currentDeliveries, attachedBookings,
             hasPipeline, pipelineDestinations, getResolvedItems, isPipelineDirty,
+            structureMismatch,
             getTeammateName, formatDate, formatDeadline, statusKey, laborDisplay,
-            handleStatusChange, handleCreatePipeline, handleUpdatePipeline, handleRetry,
+            handleStatusChange, handleCreatePipeline, handleUpdatePipeline, handleUpdateStructure, handleRetry,
             pendingAction, isAttempting, actionFailed, actionFailedLabel,
         };
     },
@@ -778,6 +868,19 @@ $teal-50: #f0fdfa;
 .pipeline-header-bar { display: flex; align-items: center; gap: 12px; padding: 14px 24px; background: $gray-800; color: $white; }
 .opid-badge { font-size: 11px; font-weight: 700; background: rgba($white, 0.12); padding: 4px 10px; border-radius: $radius-xs; font-family: 'SF Mono', 'Fira Code', monospace; letter-spacing: 0.02em; }
 .pipeline-title-text { font-size: 14px; font-weight: 600; }
+
+/* ── Structure Mismatch Banner ── */
+.structure-mismatch-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 20px; background: $amber-50; border-bottom: 1px solid rgba($amber, 0.2); }
+.mismatch-header { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 200px; }
+.mismatch-title-row { display: flex; align-items: center; gap: 8px; }
+.mismatch-icon { width: 20px; height: 20px; color: $amber; flex-shrink: 0; }
+.mismatch-title { font-size: 13px; font-weight: 700; color: darken($amber, 15%); }
+.mismatch-sub { font-size: 11px; color: $gray-600; }
+.mismatch-details { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.mismatch-badge { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: $radius-xs; text-transform: uppercase; letter-spacing: 0.03em; }
+.mismatch-badge--missing { background: $red-50; color: $red-dark; }
+.mismatch-badge--added { background: $blue-50; color: $blue-dark; }
+.btn-update-structure { display: flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: 12px; font-weight: 700; font-family: $font; color: $white; background: $amber; border: none; border-radius: $radius-sm; cursor: pointer; transition: all $transition; svg { width: 14px; height: 14px; } &:hover { background: darken($amber, 8%); } &:disabled { opacity: 0.5; cursor: not-allowed; } }
 
 /* ── Column Headers ── */
 .pipeline-col-headers { display: flex; border-bottom: 1px solid $gray-200; background: $white; }
