@@ -6,8 +6,8 @@
             <p class="empty-text">Select an order plan to view operations.</p>
         </div>
 
-        <!-- ═══════════ REVIEW MODE ═══════════ -->
-        <div v-else-if="!hasPipeline" class="review-mode">
+        <!-- ═══════════ MAIN CONTENT ═══════════ -->
+        <div v-else class="ops-content">
             <!-- Failed toast -->
             <div v-if="actionFailed" class="action-failed-bar" @click="handleRetry">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
@@ -169,7 +169,7 @@
                 </section>
 
                 <!-- ── SECTION C: CREATE PIPELINE BUTTON ── -->
-                <div class="create-pipeline-wrap">
+                <div v-if="!hasPipeline" class="create-pipeline-wrap">
                     <button type="button" class="btn-create-pipeline" :class="{ 'btn--attempting': pendingAction === 'create' }" :disabled="isAttempting" @click="handleCreatePipeline">
                         <span v-if="pendingAction === 'create'" class="spinner"></span>
                         <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
@@ -177,38 +177,30 @@
                     </button>
                 </div>
             </div>
-        </div>
 
-        <!-- ═══════════ PIPELINE MODE ═══════════ -->
-        <div v-else class="pipeline-mode">
-            <!-- Failed toast -->
-            <div v-if="actionFailed" class="action-failed-bar" @click="handleRetry">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                <span class="failed-text">{{ actionFailedLabel }} failed.</span>
-                <span class="failed-retry">Click to try again</span>
-            </div>
-
-            <!-- Header Bar -->
-            <div class="pipeline-header-bar">
-                <span class="opid-badge">{{ currentHeader?.opid }}</span>
-                <span class="pipeline-title-text">{{ currentHeader?.title }}</span>
-            </div>
-
-            <!-- Column Headers -->
-            <div class="pipeline-col-headers">
-                <div class="col-headers-main">
-                    <span class="col-h" style="flex: 0 0 25%;">ALLOCATED ITEMS</span>
-                    <span class="col-h" style="flex: 1;">BATCH ASSIGNMENT</span>
-                    <span class="col-h" style="flex: 1;">CUSTOMIZATION &amp; LABOR</span>
-                    <span class="col-h" style="flex: 1;">DOCUMENTATION</span>
+            <!-- ═══════════ PIPELINE VIEW ═══════════ -->
+            <div v-if="hasPipeline" class="pipeline-mode">
+                <!-- Header Bar -->
+                <div class="pipeline-header-bar">
+                    <span class="opid-badge">{{ currentHeader?.opid }}</span>
+                    <span class="pipeline-title-text">{{ currentHeader?.title }}</span>
                 </div>
-                <div class="col-headers-dest">
-                    <span class="col-h">FINAL DESTINATION</span>
-                </div>
-            </div>
 
-            <!-- Pipeline Body -->
-            <div class="pipeline-body">
+                <!-- Column Headers -->
+                <div class="pipeline-col-headers">
+                    <div class="col-headers-main">
+                        <span class="col-h" style="flex: 0 0 25%;">ALLOCATED ITEMS</span>
+                        <span class="col-h" style="flex: 1;">BATCH ASSIGNMENT</span>
+                        <span class="col-h" style="flex: 1;">CUSTOMIZATION &amp; LABOR</span>
+                        <span class="col-h" style="flex: 1;">DOCUMENTATION</span>
+                    </div>
+                    <div class="col-headers-dest">
+                        <span class="col-h">FINAL DESTINATION</span>
+                    </div>
+                </div>
+
+                <!-- Pipeline Body -->
+                <div class="pipeline-body">
                 <div v-for="(dest, dIdx) in pipelineDestinations" :key="dIdx" class="dest-group">
                     <!-- Pipeline Content Area -->
                     <div class="dest-content">
@@ -231,7 +223,7 @@
                             <!-- Col 2: Batch Assignment -->
                             <div class="cell-batch">
                                 <span class="cell-label">BATCH DOCUMENT</span>
-                                <input type="text" class="bd-input" v-model="batch.bd_number" placeholder="Enter BD #..." @change="handleBdChange" />
+                                <input type="text" class="bd-input" v-model="batch.bd_number" placeholder="Enter BD #..." />
                             </div>
 
                             <!-- Arrow 1 -->
@@ -265,7 +257,7 @@
                                     <span class="doc-node-title">Client DO</span>
                                     <span class="doc-node-sub">{{ batch.customization_type }}</span>
                                 </div>
-                                <input type="text" class="do-link-input" v-model="batch.client_do_link" placeholder="Paste DO link..." @change="handleBdChange" />
+                                <input type="text" class="do-link-input" v-model="batch.client_do_link" placeholder="Paste DO link..." />
                             </div>
                         </div>
                     </div>
@@ -300,6 +292,15 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Update Pipeline Button -->
+                <div class="update-pipeline-wrap">
+                    <button type="button" class="btn-update-pipeline" :class="{ 'btn--attempting': pendingAction === 'update' }" :disabled="isAttempting" @click="handleUpdatePipeline">
+                        <span v-if="pendingAction === 'update'" class="spinner"></span>
+                        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        {{ pendingAction === 'update' ? 'Updating...' : 'Update Pipeline' }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -545,7 +546,7 @@ export default {
             });
         }
 
-        function handleBdChange() {
+        function handleUpdatePipeline() {
             /* wwEditor:start */
             if (props.wwEditorState?.isEditing) return;
             /* wwEditor:end */
@@ -587,7 +588,7 @@ export default {
             currentHeader, currentDeliveries, attachedBookings,
             hasPipeline, pipelineDestinations, getResolvedItems,
             getTeammateName, formatDate, formatDeadline, statusKey, laborDisplay,
-            handleStatusChange, handleCreatePipeline, handleBdChange, handleRetry,
+            handleStatusChange, handleCreatePipeline, handleUpdatePipeline, handleRetry,
             pendingAction, isAttempting, actionFailed, actionFailedLabel,
         };
     },
@@ -643,9 +644,9 @@ $teal-50: #f0fdfa;
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ═══════════════════════════════════════════
-   REVIEW MODE
+   MAIN CONTENT
    ═══════════════════════════════════════════ */
-.review-mode { display: flex; flex-direction: column; }
+.ops-content { display: flex; flex-direction: column; }
 .review-content { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 24px 20px 60px; display: flex; flex-direction: column; gap: 28px; }
 .review-section { display: flex; flex-direction: column; gap: 12px; }
 .section-heading { font-size: 11px; font-weight: 700; color: $gray-500; text-transform: uppercase; letter-spacing: 0.06em; margin: 0; display: flex; align-items: center; gap: 6px; }
@@ -725,6 +726,10 @@ $teal-50: #f0fdfa;
 .create-pipeline-wrap { display: flex; justify-content: center; padding: 8px 0 24px; }
 .btn-create-pipeline { display: flex; align-items: center; gap: 8px; padding: 14px 32px; font-size: 14px; font-weight: 700; font-family: $font; color: $white; background: $gray-800; border: none; border-radius: $radius; cursor: pointer; transition: all $transition; svg { width: 18px; height: 18px; } &:hover { background: $gray-900; box-shadow: 0 4px 12px rgba(0,0,0,0.15); } &:disabled { opacity: 0.5; cursor: not-allowed; } }
 .btn--attempting { opacity: 0.7; cursor: wait; pointer-events: none; }
+
+/* ── Update Pipeline Button ── */
+.update-pipeline-wrap { display: flex; justify-content: flex-end; padding: 16px 20px 24px; }
+.btn-update-pipeline { display: flex; align-items: center; gap: 8px; padding: 10px 24px; font-size: 13px; font-weight: 700; font-family: $font; color: $white; background: $blue; border: none; border-radius: $radius-sm; cursor: pointer; transition: all $transition; svg { width: 16px; height: 16px; } &:hover { background: $blue-dark; box-shadow: 0 2px 8px rgba($blue, 0.25); } &:disabled { opacity: 0.5; cursor: not-allowed; } }
 
 /* ═══════════════════════════════════════════
    PIPELINE MODE
