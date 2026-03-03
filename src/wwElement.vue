@@ -190,8 +190,8 @@
 
             <!-- Header Bar -->
             <div class="pipeline-header-bar">
-                <span class="opid-badge">{{ localPipeline?.opid }}</span>
-                <span class="pipeline-title-text">{{ localPipeline?.title }}</span>
+                <span class="opid-badge">{{ currentHeader?.opid }}</span>
+                <span class="pipeline-title-text">{{ currentHeader?.title }}</span>
             </div>
 
             <!-- Column Headers -->
@@ -209,14 +209,14 @@
 
             <!-- Pipeline Body -->
             <div class="pipeline-body">
-                <div v-for="(dest, dIdx) in localPipeline?.destinations || []" :key="dIdx" class="dest-group">
+                <div v-for="(dest, dIdx) in pipelineDestinations" :key="dIdx" class="dest-group">
                     <!-- Pipeline Content Area -->
                     <div class="dest-content">
-                        <div v-for="(batch, bIdx) in dest.batches" :key="batch.batch_id" class="batch-row" :class="{ 'batch-row--border': bIdx < dest.batches.length - 1 }">
+                        <div v-for="(batch, bIdx) in dest.batches" :key="bIdx" class="batch-row" :class="{ 'batch-row--border': bIdx < dest.batches.length - 1 }">
                             <!-- Col 1: Allocated Items -->
                             <div class="cell-allocated">
-                                <span class="batch-type-badge">BATCH: {{ (batch.customization || 'NONE').toUpperCase() }}</span>
-                                <div v-for="item in batch.items" :key="item.line_id" class="p-item">
+                                <span class="batch-type-badge">BATCH: {{ (batch.customization_type || 'NONE').toUpperCase() }}</span>
+                                <div v-for="item in getResolvedItems(batch)" :key="item.booking_items_id" class="p-item">
                                     <div class="p-item-info">
                                         <div class="p-item-name">{{ item.product_name }}</div>
                                         <div class="p-item-sku">{{ item.sku }}</div>
@@ -243,7 +243,7 @@
                             <div class="cell-cust">
                                 <svg class="cust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                                 <div class="cust-text">
-                                    <span class="cust-name">{{ batch.customization }}</span>
+                                    <span class="cust-name">{{ batch.customization_type }}</span>
                                     <span v-if="batch.labor" class="cust-labor">+ {{ laborDisplay(batch.labor) }}</span>
                                 </div>
                             </div>
@@ -255,11 +255,17 @@
 
                             <!-- Col 4: Documentation -->
                             <div class="cell-doc">
-                                <div class="doc-card-node">
+                                <a v-if="batch.client_do_link" :href="batch.client_do_link" target="_blank" class="doc-card-node doc-card-node--linked">
                                     <svg class="doc-node-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                                     <span class="doc-node-title">Client DO</span>
-                                    <span class="doc-node-sub">{{ batch.customization }}</span>
+                                    <span class="doc-node-sub">{{ batch.customization_type }}</span>
+                                </a>
+                                <div v-else class="doc-card-node">
+                                    <svg class="doc-node-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                    <span class="doc-node-title">Client DO</span>
+                                    <span class="doc-node-sub">{{ batch.customization_type }}</span>
                                 </div>
+                                <input type="text" class="do-link-input" v-model="batch.client_do_link" placeholder="Paste DO link..." @change="handleBdChange" />
                             </div>
                         </div>
                     </div>
@@ -270,18 +276,18 @@
                             <div class="dest-card-icon">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                             </div>
-                            <h4 class="dest-card-name">{{ dest.label }}</h4>
+                            <h4 class="dest-card-name">{{ dest.delivery?.label || 'Unknown' }}</h4>
 
                             <div class="dest-detail">
                                 <svg class="dest-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                                <span class="dest-detail-text">{{ dest.address }}</span>
+                                <span class="dest-detail-text">{{ dest.delivery?.address || '-' }}</span>
                             </div>
 
                             <div class="dest-detail">
                                 <svg class="dest-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                                 <div>
                                     <span class="dest-detail-label">DEADLINE</span>
-                                    <span class="dest-detail-value">{{ formatDeadline(dest.deadline) }}</span>
+                                    <span class="dest-detail-value">{{ formatDeadline(dest.delivery?.deadline) }}</span>
                                 </div>
                             </div>
 
@@ -289,7 +295,7 @@
                                 <svg class="dest-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                                 <div>
                                     <span class="dest-detail-label">RECIPIENT</span>
-                                    <span class="dest-detail-value">{{ dest.recipient_name }}<br/>· {{ dest.recipient_phone }}</span>
+                                    <span class="dest-detail-value">{{ dest.delivery?.pic_name || '-' }}<br/>· {{ dest.delivery?.pic_phone || '-' }}</span>
                                 </div>
                             </div>
                         </div>
@@ -349,6 +355,7 @@ export default {
         const bookingHeaderLookup = computed(() => { const m = {}; for (const h of resolvedBookingHeaders.value) m[h.id] = h; return m; });
         const bookingItemsByHeader = computed(() => { const m = {}; for (const i of resolvedBookingItems.value) { if (!m[i.headerid]) m[i.headerid] = []; m[i.headerid].push(i); } return m; });
         const bookingItemLookup = computed(() => { const m = {}; for (const i of resolvedBookingItems.value) m[i.id] = i; return m; });
+        const deliveryLookup = computed(() => { const m = {}; for (const d of resolvedOpDeliveries.value) m[d.id] = d; return m; });
 
         // ── Current order plan data ──
         const currentHeader = computed(() => resolvedOpHeaders.value.find(h => h.id === selectedId.value) || null);
@@ -381,6 +388,47 @@ export default {
                 lastSyncedPipelineId.value = null;
             }
         }, { immediate: true });
+
+        // ── Pipeline render resolvers ──
+        const orderplanLinesByItemDelivery = computed(() => {
+            const m = {};
+            for (const l of currentLines.value) {
+                const key = `${l.bookingitems_headerid}::${l.deliveries_headerid}`;
+                if (!m[key]) m[key] = 0;
+                m[key] += (l.quantity_assigned || 0);
+            }
+            return m;
+        });
+
+        function resolveItemForPipeline(bookingItemsId, deliveryId) {
+            const bi = bookingItemLookup.value[bookingItemsId];
+            const inv = bi ? inventoryLookup.value[bi.sku] : null;
+            const qtyAllocated = orderplanLinesByItemDelivery.value[`${bookingItemsId}::${deliveryId}`] || 0;
+            return {
+                booking_items_id: bookingItemsId,
+                sku: bi?.sku || '',
+                product_name: inv?.model || 'Unknown Item',
+                product_image: inv?.imagelink || '',
+                quantity_allocated: qtyAllocated,
+                quantity_total: bi?.quantity || 0,
+                status: bi?.status || 'Booked',
+            };
+        }
+
+        const pipelineDestinations = computed(() => {
+            if (!localPipeline.value || !Array.isArray(localPipeline.value)) return [];
+            const groups = {};
+            for (const batch of localPipeline.value) {
+                const dId = batch.orderplan_deliveries_id;
+                if (!groups[dId]) groups[dId] = { delivery: deliveryLookup.value[dId] || null, batches: [] };
+                groups[dId].batches.push(batch);
+            }
+            return Object.values(groups);
+        });
+
+        function getResolvedItems(batch) {
+            return (batch.attached || []).map(ref => resolveItemForPipeline(ref.booking_items_id, batch.orderplan_deliveries_id));
+        }
 
         // ── Attached bookings for review mode ──
         const attachedBookings = computed(() => {
@@ -439,76 +487,34 @@ export default {
             });
         }
 
-        // ── Build structure_data ──
+        // ── Build structure_data (reference-based flat array) ──
         function buildStructureData() {
-            const header = currentHeader.value;
-            if (!header) return null;
-
-            const deliveries = currentDeliveries.value;
+            if (!currentHeader.value) return null;
             const lines = currentLines.value;
+            const batchMap = {};
 
-            const destGroups = {};
             for (const line of lines) {
-                const dId = line.deliveries_headerid;
-                if (!destGroups[dId]) destGroups[dId] = [];
-                destGroups[dId].push(line);
-            }
-
-            const destinations = deliveries.map(delivery => {
-                const dLines = destGroups[delivery.id] || [];
-                const batchMap = {};
-
-                for (const line of dLines) {
-                    const key = `${line.customization || 'None'}::${line.labor || ''}`;
-                    if (!batchMap[key]) {
-                        batchMap[key] = { customization: line.customization || 'None', labor: line.labor || null, items: [] };
-                    }
-
-                    const bi = bookingItemLookup.value[line.bookingitems_headerid];
-                    const inv = bi ? inventoryLookup.value[bi.sku] : null;
-
-                    batchMap[key].items.push({
-                        line_id: line.id,
-                        booking_item_id: line.bookingitems_headerid,
-                        sku: bi?.sku || '',
-                        product_name: inv ? inv.model : 'Unknown Item',
-                        product_image: inv?.imagelink || '',
-                        quantity_allocated: line.quantity_assigned || 0,
-                        quantity_total: bi?.quantity || 0,
-                        status: bi?.status || 'Booked',
+                const key = `${line.deliveries_headerid}::${line.customization || 'None'}::${line.labor || ''}`;
+                if (!batchMap[key]) {
+                    batchMap[key] = {
+                        bd_number: '',
+                        customization_type: line.customization || 'None',
+                        labor: line.labor || null,
+                        client_do_link: '',
+                        orderplan_deliveries_id: line.deliveries_headerid,
+                        attached: [],
+                    };
+                }
+                const bi = bookingItemLookup.value[line.bookingitems_headerid];
+                if (!batchMap[key].attached.some(a => a.booking_items_id === line.bookingitems_headerid)) {
+                    batchMap[key].attached.push({
+                        booking_items_id: line.bookingitems_headerid,
+                        booking_headers_id: bi?.headerid || '',
                     });
                 }
+            }
 
-                return {
-                    delivery_id: delivery.id,
-                    label: delivery.label || 'Unnamed',
-                    delivery_type: delivery.deliverytype || '',
-                    address: delivery.address || '',
-                    deadline: delivery.deadline || '',
-                    recipient_name: delivery.pic_name || '',
-                    recipient_phone: delivery.pic_phone || '',
-                    batches: Object.values(batchMap).map(bg => ({
-                        batch_id: generateUid(),
-                        customization: bg.customization,
-                        labor: bg.labor,
-                        bd_number: '',
-                        items: bg.items,
-                    })),
-                };
-            });
-
-            const picBda = header.pic_bda ? teammateLookup.value[header.pic_bda] : null;
-            const picOps = header.pic_ops ? teammateLookup.value[header.pic_ops] : null;
-
-            return {
-                opid: header.opid || '',
-                title: header.title || '',
-                pic_bda: picBda ? { id: picBda.id, name: picBda.name } : null,
-                pic_ops: picOps ? { id: picOps.id, name: picOps.name } : null,
-                quoteref: header.quoteref || '',
-                invoiceref: header.invoiceref || '',
-                destinations,
-            };
+            return Object.values(batchMap);
         }
 
         // ── Action tracking ──
@@ -579,7 +585,7 @@ export default {
 
         return {
             currentHeader, currentDeliveries, attachedBookings,
-            hasPipeline, localPipeline,
+            hasPipeline, pipelineDestinations, getResolvedItems,
             getTeammateName, formatDate, formatDeadline, statusKey, laborDisplay,
             handleStatusChange, handleCreatePipeline, handleBdChange, handleRetry,
             pendingAction, isAttempting, actionFailed, actionFailedLabel,
@@ -776,11 +782,13 @@ $teal-50: #f0fdfa;
 .cust-labor { font-size: 11px; color: $gray-500; }
 
 /* ── Col 4: Documentation ── */
-.cell-doc { flex: 0 0 auto; }
-.doc-card-node { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 20px; border: 1.5px solid $gray-200; border-radius: $radius; background: $white; min-width: 100px; transition: border-color $transition; &:hover { border-color: $gray-300; } }
+.cell-doc { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; }
+.doc-card-node { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 20px; border: 1.5px solid $gray-200; border-radius: $radius; background: $white; min-width: 100px; transition: border-color $transition; text-decoration: none; &:hover { border-color: $gray-300; } }
+.doc-card-node--linked { border-color: $blue; &:hover { border-color: $blue-dark; } .doc-node-title { color: $blue; } }
 .doc-node-icon { width: 24px; height: 24px; color: $gray-500; }
 .doc-node-title { font-size: 11px; font-weight: 700; color: $gray-800; }
 .doc-node-sub { font-size: 9px; color: $gray-400; }
+.do-link-input { width: 100%; height: 28px; padding: 0 8px; border: 1px solid $gray-200; border-radius: $radius-xs; font-size: 10px; font-family: $font; color: $gray-700; background: $white; outline: none; transition: border-color $transition; &::placeholder { color: $gray-400; } &:focus { border-color: $blue; } }
 
 /* ── Col 5: Destination Sidebar ── */
 .dest-sidebar { width: 220px; flex-shrink: 0; }
