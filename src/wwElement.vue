@@ -182,10 +182,12 @@
                 <!-- Column Headers -->
                 <div class="pipeline-col-headers">
                     <div class="col-headers-main">
-                        <span class="col-h" style="flex: 0 0 25%;">ALLOCATED ITEMS</span>
-                        <span class="col-h" style="flex: 1;">BATCH ASSIGNMENT</span>
-                        <span class="col-h" style="flex: 1;">CUSTOMIZATION &amp; LABOR</span>
-                        <span class="col-h" style="flex: 1;">DOCUMENTATION</span>
+                        <span class="col-h col-h--allocated">ALLOCATED ITEMS</span>
+                        <div class="col-h-flow">
+                            <span class="col-h col-h--batch">BATCH ASSIGNMENT</span>
+                            <span class="col-h col-h--cust">CUSTOMIZATION &amp; LABOR</span>
+                            <span class="col-h col-h--doc">DOCUMENTATION</span>
+                        </div>
                     </div>
                     <div class="col-headers-dest">
                         <span class="col-h">FINAL DESTINATION</span>
@@ -209,6 +211,7 @@
                                         <div class="p-item-info">
                                             <div class="p-item-name">{{ item.product_name }}</div>
                                             <div class="p-item-sku">{{ item.sku }}</div>
+                                            <span v-if="item.labor" class="p-item-labor">+ {{ laborDisplay(item.labor) }}</span>
                                         </div>
                                         <div class="p-item-qty">
                                             <span class="pq-num" :class="{ 'pq-full': item.quantity_allocated >= item.quantity_total }">{{ item.quantity_allocated }}</span><span class="pq-total">/ {{ item.quantity_total }}</span>
@@ -217,55 +220,55 @@
                                     </div>
                                 </div>
 
-                                <!-- Col 2: Batch Assignment -->
-                                <div class="cell-batch">
-                                    <span class="cell-label">BATCH DOCUMENT</span>
-                                    <div class="input-with-btn">
-                                        <input type="text" class="bd-input" v-model="batch.bd_number" placeholder="Enter BD #..." />
-                                        <button type="button" class="btn-field-update" :class="{ 'btn--attempting': pendingAction === 'update' }" :disabled="isAttempting" @click="handleUpdatePipeline" title="Update BD number">
-                                            <span v-if="pendingAction === 'update'" class="spinner"></span>
-                                            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                        </button>
+                                <!-- Flow: BD → Customization → Documentation -->
+                                <div class="batch-flow">
+                                    <!-- Col 2: Batch Assignment -->
+                                    <div class="cell-batch">
+                                        <span class="cell-label">BATCH DOCUMENT</span>
+                                        <div class="input-with-btn">
+                                            <input type="text" class="bd-input" v-model="batch.bd_number" placeholder="Enter BD #..." />
+                                            <button type="button" class="btn-field-update" :class="{ 'btn--attempting': pendingAction === 'update' }" :disabled="isAttempting" @click="handleUpdatePipeline" title="Update BD number">
+                                                <span v-if="pendingAction === 'update'" class="spinner"></span>
+                                                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <!-- Arrow 1 -->
-                                <div class="flow-arrow">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                                </div>
+                                    <!-- Arrow 1 -->
+                                    <div class="flow-arrow">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                                    </div>
 
-                                <!-- Col 3: Customization & Labor -->
-                                <div class="cell-cust">
-                                    <svg class="cust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                                    <div class="cust-text">
+                                    <!-- Col 3: Customization -->
+                                    <div class="cell-cust">
+                                        <svg class="cust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                                         <span class="cust-name">{{ batch.customization_type }}</span>
-                                        <span v-if="batch.labor" class="cust-labor">+ {{ laborDisplay(batch.labor) }}</span>
                                     </div>
-                                </div>
 
-                                <!-- Arrow 2 -->
-                                <div class="flow-arrow">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                                </div>
-
-                                <!-- Col 4: Documentation -->
-                                <div class="cell-doc">
-                                    <a v-if="batch.client_do_link" :href="batch.client_do_link" target="_blank" class="doc-card-node doc-card-node--linked">
-                                        <svg class="doc-node-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                                        <span class="doc-node-title">Client DO</span>
-                                        <span class="doc-node-sub">{{ batch.customization_type }}</span>
-                                    </a>
-                                    <div v-else class="doc-card-node">
-                                        <svg class="doc-node-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                                        <span class="doc-node-title">Client DO</span>
-                                        <span class="doc-node-sub">{{ batch.customization_type }}</span>
+                                    <!-- Arrow 2 -->
+                                    <div class="flow-arrow">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                                     </div>
-                                    <div class="input-with-btn">
-                                        <input type="text" class="do-link-input" v-model="batch.client_do_link" placeholder="Paste DO link..." />
-                                        <button type="button" class="btn-field-update" :class="{ 'btn--attempting': pendingAction === 'update' }" :disabled="isAttempting" @click="handleUpdatePipeline" title="Update DO link">
-                                            <span v-if="pendingAction === 'update'" class="spinner"></span>
-                                            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                        </button>
+
+                                    <!-- Col 4: Documentation -->
+                                    <div class="cell-doc">
+                                        <a v-if="batch.client_do_link" :href="batch.client_do_link" target="_blank" class="doc-card-node doc-card-node--linked">
+                                            <svg class="doc-node-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                            <span class="doc-node-title">Client DO</span>
+                                            <span class="doc-node-sub">{{ batch.customization_type }}</span>
+                                        </a>
+                                        <div v-else class="doc-card-node">
+                                            <svg class="doc-node-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                            <span class="doc-node-title">Client DO</span>
+                                            <span class="doc-node-sub">{{ batch.customization_type }}</span>
+                                        </div>
+                                        <div class="input-with-btn">
+                                            <input type="text" class="do-link-input" v-model="batch.client_do_link" placeholder="Paste DO link..." />
+                                            <button type="button" class="btn-field-update" :class="{ 'btn--attempting': pendingAction === 'update' }" :disabled="isAttempting" @click="handleUpdatePipeline" title="Update DO link">
+                                                <span v-if="pendingAction === 'update'" class="spinner"></span>
+                                                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -460,7 +463,9 @@ export default {
             return m;
         });
 
-        function resolveItemForPipeline(bookingItemsId, deliveryId) {
+        function resolveItemForPipeline(ref, deliveryId) {
+            const bookingItemsId = typeof ref === 'string' ? ref : ref.booking_items_id;
+            const labor = (typeof ref === 'object' && ref?.labor) ? ref.labor : null;
             const bi = bookingItemLookup.value[bookingItemsId];
             const inv = bi ? inventoryLookup.value[bi.sku] : null;
             const qtyAllocated = orderplanLinesByItemDelivery.value[`${bookingItemsId}::${deliveryId}`] || 0;
@@ -472,6 +477,7 @@ export default {
                 quantity_allocated: qtyAllocated,
                 quantity_total: bi?.quantity || 0,
                 status: bi?.status || 'Booked',
+                labor,
             };
         }
 
@@ -487,7 +493,7 @@ export default {
         });
 
         function getResolvedItems(batch) {
-            return (batch.attached || []).map(ref => resolveItemForPipeline(ref.booking_items_id, batch.orderplan_deliveries_id));
+            return (batch.attached || []).map(ref => resolveItemForPipeline(ref, batch.orderplan_deliveries_id));
         }
 
         // ── Attached bookings for review mode ──
@@ -552,7 +558,7 @@ export default {
         }
 
         // ── Build structure_data (reference-based flat array) ──
-        // Batches are separated by delivery + customization only (labor is not a separate allocation)
+        // Batches grouped by delivery + customization only. Labor is stored per item ref.
         function buildStructureData() {
             if (!currentHeader.value) return null;
             const lines = currentLines.value;
@@ -564,29 +570,22 @@ export default {
                     batchMap[key] = {
                         bd_number: '',
                         customization_type: line.customization || 'None',
-                        laborSet: new Set(),
                         client_do_link: '',
                         orderplan_deliveries_id: line.deliveries_headerid,
                         attached: [],
                     };
                 }
-                if (line.labor) batchMap[key].laborSet.add(line.labor);
                 const bi = bookingItemLookup.value[line.bookingitems_headerid];
                 if (!batchMap[key].attached.some(a => a.booking_items_id === line.bookingitems_headerid)) {
                     batchMap[key].attached.push({
                         booking_items_id: line.bookingitems_headerid,
                         booking_headers_id: bi?.headerid || '',
+                        labor: line.labor || null,
                     });
                 }
             }
 
-            const batches = Object.values(batchMap);
-            for (const b of batches) {
-                const labors = [...b.laborSet].filter(Boolean);
-                b.labor = labors.length === 0 ? null : (labors.length === 1 ? labors[0] : labors);
-                delete b.laborSet;
-            }
-            return batches;
+            return Object.values(batchMap);
         }
 
         // ── Action tracking ──
@@ -831,12 +830,17 @@ $teal-50: #f0fdfa;
 
 /* ── Column Headers ── */
 .pipeline-col-headers { display: flex; border-bottom: 1px solid $gray-200; background: $white; min-width: 0; overflow: hidden; }
-.col-headers-main { flex: 1; display: flex; padding: 12px 24px; min-width: 0; }
-.col-headers-dest { width: 220px; flex-shrink: 0; padding: 12px 16px; border-left: 1px solid $gray-200; }
+.col-headers-main { flex: 1; display: flex; align-items: center; padding: 10px 24px; gap: 12px; min-width: 0; }
+.col-h--allocated { flex: 0 0 30%; min-width: 0; }
+.col-h-flow { flex: 1; display: flex; gap: 8px; align-items: center; }
+.col-h--batch { flex: 0 0 180px; }
+.col-h--cust { flex: 1; }
+.col-h--doc { flex: 0 0 160px; }
+.col-headers-dest { width: 220px; flex-shrink: 0; padding: 10px 16px; border-left: 1px solid $gray-200; }
 .col-h { font-size: 10px; font-weight: 700; color: $gray-400; text-transform: uppercase; letter-spacing: 0.06em; }
 
 /* ── Pipeline Body ── */
-.pipeline-body { padding: 20px; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.pipeline-body { padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .pipeline-empty { padding: 40px; text-align: center; background: $white; border: 2px dashed $gray-200; border-radius: $radius; }
 .pipeline-empty-text { font-size: 13px; color: $gray-500; margin: 0; }
 
@@ -844,46 +848,49 @@ $teal-50: #f0fdfa;
 .dest-group { display: flex; gap: 0; min-width: 0; }
 .dest-content { flex: 1; min-width: 0; border: 1px solid $gray-200; border-radius: $radius 0 0 $radius; background: $white; overflow: hidden; }
 
-.batch-row { display: flex; align-items: stretch; flex-wrap: wrap; padding: 20px 24px; gap: 16px; min-width: 0; }
+/* ── Batch Row ── */
+.batch-row { display: flex; align-items: flex-start; gap: 16px; padding: 20px 24px; }
 .batch-row--border { border-bottom: 1px solid $gray-100; }
 
 /* ── Col 1: Allocated Items ── */
-.cell-allocated { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.cell-allocated { flex: 0 0 30%; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 .batch-type-badge { display: inline-flex; align-self: flex-start; padding: 3px 10px; border-radius: $radius-xs; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; background: $teal-50; color: $teal; border: 1px solid rgba($teal, 0.15); }
 .p-item { display: flex; align-items: center; gap: 10px; }
 .p-item-thumb { width: 32px; height: 32px; border-radius: $radius-xs; object-fit: cover; border: 1px solid $gray-200; flex-shrink: 0; }
 .p-item-info { flex: 1; min-width: 0; }
-.p-item-name { font-size: 13px; font-weight: 600; color: $gray-900; overflow: hidden; text-overflow: ellipsis; word-break: break-word; }
+.p-item-name { font-size: 12px; font-weight: 600; color: $gray-900; overflow: hidden; text-overflow: ellipsis; }
 .p-item-sku { font-size: 10px; color: $gray-500; font-family: 'SF Mono', 'Fira Code', monospace; }
+.p-item-labor { display: inline-block; margin-top: 3px; font-size: 9px; font-weight: 700; color: $teal; background: $teal-50; border: 1px solid rgba($teal, 0.15); padding: 1px 6px; border-radius: $radius-xs; }
 .p-item-qty { text-align: right; flex-shrink: 0; }
-.pq-num { font-size: 18px; font-weight: 700; color: $gray-900; }
+.pq-num { font-size: 16px; font-weight: 700; color: $gray-900; }
 .pq-full { color: $green; }
-.pq-total { font-size: 11px; color: $gray-400; }
+.pq-total { font-size: 10px; color: $gray-400; }
 .pq-label { display: block; font-size: 8px; font-weight: 700; color: $gray-400; text-transform: uppercase; letter-spacing: 0.05em; }
 
+/* ── Batch Flow (cols 2-4) ── */
+.batch-flow { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
+
 /* ── Col 2: Batch Assignment ── */
-.cell-batch { flex: 0 1 160px; min-width: 120px; display: flex; flex-direction: column; gap: 6px; }
+.cell-batch { flex: 0 0 180px; display: flex; flex-direction: column; gap: 6px; }
 .cell-label { font-size: 9px; font-weight: 700; color: $gray-400; text-transform: uppercase; letter-spacing: 0.04em; }
-.bd-input { height: 36px; min-width: 100px; padding: 0 10px; border: 1.5px solid $gray-200; border-radius: $radius-sm; font-size: 12px; font-family: $font; color: $gray-900; background: $white; outline: none; transition: border-color $transition, box-shadow $transition; &::placeholder { color: $gray-400; } &:focus { border-color: $blue; box-shadow: 0 0 0 3px rgba($blue, 0.08); } }
+.bd-input { height: 36px; width: 100%; padding: 0 10px; border: 1.5px solid $gray-200; border-radius: $radius-sm; font-size: 12px; font-family: $font; color: $gray-900; background: $white; outline: none; transition: border-color $transition, box-shadow $transition; &::placeholder { color: $gray-400; } &:focus { border-color: $blue; box-shadow: 0 0 0 3px rgba($blue, 0.08); } }
 
 /* ── Flow Arrow ── */
-.flow-arrow { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; padding: 0 4px; color: $gray-300; svg { width: 20px; height: 20px; } }
+.flow-arrow { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; color: $gray-300; svg { width: 18px; height: 18px; } }
 
 /* ── Col 3: Customization ── */
-.cell-cust { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
-.cust-icon { width: 28px; height: 28px; color: $gray-500; flex-shrink: 0; padding: 4px; background: $gray-50; border-radius: $radius-xs; }
-.cust-text { display: flex; flex-direction: column; }
-.cust-name { font-size: 13px; font-weight: 600; color: $gray-800; }
-.cust-labor { font-size: 11px; color: $gray-500; }
+.cell-cust { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+.cust-icon { width: 26px; height: 26px; color: $gray-500; flex-shrink: 0; padding: 4px; background: $gray-50; border-radius: $radius-xs; }
+.cust-name { font-size: 12px; font-weight: 600; color: $gray-800; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
 /* ── Col 4: Documentation ── */
-.cell-doc { flex: 0 1 140px; min-width: 120px; display: flex; flex-direction: column; gap: 6px; }
-.doc-card-node { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 20px; border: 1.5px solid $gray-200; border-radius: $radius; background: $white; min-width: 100px; transition: border-color $transition; text-decoration: none; &:hover { border-color: $gray-300; } }
-.doc-card-node--linked { border-color: $blue; &:hover { border-color: $blue-dark; } .doc-node-title { color: $blue; } }
-.doc-node-icon { width: 24px; height: 24px; color: $gray-500; }
+.cell-doc { flex: 0 0 160px; display: flex; flex-direction: column; gap: 6px; }
+.doc-card-node { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 16px; border: 1.5px solid $gray-200; border-radius: $radius; background: $white; transition: border-color $transition; text-decoration: none; cursor: default; &:hover { border-color: $gray-300; } }
+.doc-card-node--linked { border-color: $blue; cursor: pointer; &:hover { border-color: $blue-dark; } .doc-node-title { color: $blue; } }
+.doc-node-icon { width: 20px; height: 20px; color: $gray-500; }
 .doc-node-title { font-size: 11px; font-weight: 700; color: $gray-800; }
-.doc-node-sub { font-size: 9px; color: $gray-400; }
-.do-link-input { height: 28px; padding: 0 8px; border: 1px solid $gray-200; border-radius: $radius-xs; font-size: 10px; font-family: $font; color: $gray-700; background: $white; outline: none; transition: border-color $transition; &::placeholder { color: $gray-400; } &:focus { border-color: $blue; } }
+.doc-node-sub { font-size: 9px; color: $gray-400; text-align: center; }
+.do-link-input { height: 30px; width: 100%; padding: 0 8px; border: 1px solid $gray-200; border-radius: $radius-xs; font-size: 10px; font-family: $font; color: $gray-700; background: $white; outline: none; transition: border-color $transition; &::placeholder { color: $gray-400; } &:focus { border-color: $blue; } }
 
 /* ── Col 5: Destination Sidebar ── */
 .dest-sidebar { width: 220px; flex-shrink: 0; }
@@ -897,57 +904,60 @@ $teal-50: #f0fdfa;
 .dest-detail-value { display: block; font-size: 11px; color: $gray-700; line-height: 1.4; }
 
 /* ═══ RESPONSIVE ═══ */
-@media (max-width: 1024px) {
+
+/* Stack destination sidebar below content on tablets */
+@media (max-width: 1100px) {
     .dest-group { flex-direction: column; }
     .dest-sidebar { width: 100%; }
     .dest-card { border-left: 1px solid $gray-200; border-top: none; border-radius: 0 0 $radius $radius; }
     .dest-content { border-radius: $radius $radius 0 0; }
-    .batch-row { flex-wrap: wrap; gap: 16px; padding: 16px; }
-    .cell-allocated { flex: 1 1 100%; }
-    .cell-batch { flex: 1 1 auto; min-width: 0; }
-    .cell-cust { flex: 1 1 100%; }
-    .cell-doc { flex: 1 1 100%; min-width: 0; }
-    .flow-arrow { display: none; }
     .pipeline-col-headers { display: none; }
-    .col-headers-dest { width: 100%; border-left: none; }
 }
-@media (max-width: 768px) {
-    .meta-grid { grid-template-columns: 1fr; }
-    .meta-field--full { grid-column: 1; }
-    .meta-card { padding: 16px; }
+
+/* Stack allocated above flow row on narrower screens */
+@media (max-width: 860px) {
+    .batch-row { flex-direction: column; padding: 16px 20px; gap: 12px; }
+    .cell-allocated { flex: 0 0 auto; width: 100%; }
+    .batch-flow { width: 100%; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; min-width: 0; }
+    .pipeline-body { padding: 12px 16px 20px; }
+}
+
+/* Stack flow cells vertically on phones */
+@media (max-width: 600px) {
+    .batch-flow { flex-direction: column; overflow-x: visible; align-items: stretch; gap: 8px; }
+    .flow-arrow { display: none; }
+    .cell-batch { flex: 0 0 auto; }
+    .cell-cust { flex: 0 0 auto; min-width: 0; }
+    .cell-doc { flex: 0 0 auto; }
+    .batch-row { padding: 14px 14px; gap: 10px; }
+    .structure-mismatch-banner { flex-direction: column; align-items: stretch; padding: 12px 16px; gap: 10px; }
+    .btn-update-structure { align-self: stretch; min-height: 44px; justify-content: center; }
+    .btn-create-pipeline { width: 100%; justify-content: center; }
+    .pipeline-header-bar { padding: 12px 16px; flex-wrap: wrap; }
+}
+
+/* Booking items table on small screens */
+@media (max-width: 700px) {
     .items-header { display: none; }
-    .item-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 14px 16px; }
+    .item-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 16px; }
     .item-product { flex: 1 1 100%; }
-    .item-sku { order: 2; flex: 0 0 auto; font-size: 11px; color: $gray-500; }
+    .item-sku { order: 2; flex: 0 0 auto; font-size: 11px; }
     .item-avail { order: 3; flex: 0 0 auto; }
-    .item-status-cell { order: 4; flex: 1 1 auto; min-width: 120px; }
+    .item-status-cell { order: 4; flex: 1 1 120px; }
     .item-qty { order: 5; flex: 0 0 auto; }
     .item-action { order: 6; flex: 0 0 auto; }
-    .review-content { padding: 16px 12px 32px; gap: 16px; }
-    .booking-header { padding: 12px 16px; }
-    .pipeline-body { padding: 12px 16px; }
-    .structure-mismatch-banner { flex-direction: column; align-items: stretch; padding: 12px 16px; gap: 10px; }
-    .mismatch-header { min-width: 0; }
-    .btn-update-structure { align-self: stretch; min-height: 44px; }
-    .btn-create-pipeline { width: 100%; justify-content: center; min-height: 48px; }
-    .cell-batch .input-with-btn { flex-wrap: nowrap; }
-    .cell-doc .input-with-btn { flex-wrap: nowrap; }
-    .btn-field-update { min-width: 44px; min-height: 44px; }
+    .review-content { padding: 12px 12px 24px; gap: 14px; }
+    .booking-header { padding: 12px 14px; }
+    .meta-card { padding: 14px; }
 }
+
 @media (max-width: 480px) {
-    .ops-manager { font-size: 14px; }
-    .pipeline-header-bar { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
+    .meta-grid { grid-template-columns: 1fr; }
+    .meta-field--full { grid-column: 1; }
+    .review-content { padding: 10px 10px 20px; }
+    .action-failed-bar { padding: 10px 14px; flex-wrap: wrap; }
     .opid-badge { font-size: 10px; }
     .pipeline-title-text { font-size: 13px; word-break: break-word; }
-    .review-content { padding: 12px 10px 24px; }
-    .section-heading { font-size: 10px; }
-    .booking-block { margin-bottom: 12px; }
-    .batch-row { padding: 16px 12px; gap: 12px; }
-    .batch-type-badge { font-size: 8px; }
-    .p-item-name { font-size: 12px; }
-    .pq-num { font-size: 16px; }
-    .dest-card { padding: 16px 12px; }
-    .dest-card-name { font-size: 13px; }
-    .action-failed-bar { padding: 12px 16px; flex-wrap: wrap; }
+    .dest-card { padding: 14px 12px; }
 }
 </style>
