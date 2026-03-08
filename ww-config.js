@@ -43,13 +43,25 @@ export default {
             default: true,
         },
         {
-            name: 'onUpdateLineField',
-            label: { en: 'On Update Line Field' },
+            name: 'onSetBdNumber',
+            label: { en: 'On Set BD Number' },
             event: {
                 value: {
-                    line_id: null,
-                    field: null,
-                    value: null,
+                    batch_key: null,
+                    line_ids: [],
+                    bd_number: null,
+                },
+            },
+            default: false,
+        },
+        {
+            name: 'onSetDoLink',
+            label: { en: 'On Set DO Link' },
+            event: {
+                value: {
+                    batch_key: null,
+                    line_ids: [],
+                    do_link: null,
                 },
             },
             default: false,

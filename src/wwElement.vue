@@ -196,7 +196,12 @@
                                         <td>{{ item.color }}</td>
                                         <td class="col-right cell-mono">{{ item.qtyDisplay }}</td>
                                         <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-merged">
-                                            <input type="text" class="inline-input" :value="batch.bd_number" placeholder="BD#" @change="handleBatchBdChange(batch.key, $event.target.value)" />
+                                            <div class="input-with-btn">
+                                                <input type="text" class="inline-input" :ref="el => setBdRef(batch.key, el)" :value="batch.bd_number" placeholder="BD#" />
+                                                <button type="button" class="btn-confirm" @click="handleSetBdNumber(batch.key)" title="Set BD#">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                                </button>
+                                            </div>
                                         </td>
                                         <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-merged">
                                             <span>{{ batch.customization || 'None' }}</span>
@@ -205,8 +210,12 @@
                                             </div>
                                         </td>
                                         <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-merged">
-                                            <a v-if="batch.mockup_link" :href="batch.mockup_link" target="_blank" class="link">DO Link</a>
-                                            <span v-else class="cell-muted">-</span>
+                                            <div class="input-with-btn">
+                                                <input type="text" class="inline-input inline-input--wide" :ref="el => setDoRef(batch.key, el)" :value="batch.do_link" placeholder="DO Link" />
+                                                <button type="button" class="btn-confirm" @click="handleSetDoLink(batch.key)" title="Set DO Link">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                                </button>
+                                            </div>
                                         </td>
                                         <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-merged">
                                             {{ batch.deliveryLabel }}
@@ -319,16 +328,16 @@ export default {
                         customization: line.customization || 'None',
                         deliveryLabel: line._delivery?.label || 'Unknown',
                         bd_number: '',
-                        mockup_link: '',
+                        do_link: '',
                         labors: [],
                         items: [],
                         _laborSet: new Set(),
                     };
                 }
                 const batch = batchMap[key];
-                // Collect first available mockup_link for the batch
-                if (!batch.mockup_link && line.mockup_link) {
-                    batch.mockup_link = line.mockup_link;
+                // Collect first available mockup_link as default do_link
+                if (!batch.do_link && line.mockup_link) {
+                    batch.do_link = line.mockup_link;
                 }
                 // Collect unique labor types across items in batch
                 if (line.labor) {
@@ -388,19 +397,38 @@ export default {
             });
         }
 
-        function handleBatchBdChange(batchKey, value) {
+        // ── Input refs for BD# and DO Link per batch ──
+        const bdRefs = {};
+        const doRefs = {};
+        function setBdRef(key, el) { if (el) bdRefs[key] = el; }
+        function setDoRef(key, el) { if (el) doRefs[key] = el; }
+
+        function handleSetBdNumber(batchKey) {
             /* wwEditor:start */
             if (props.wwEditorState?.isEditing) return;
             /* wwEditor:end */
             const batch = pipelineBatches.value.find(b => b.key === batchKey);
             if (!batch) return;
-            // Emit update for all lines in this batch
-            for (const item of batch.items) {
-                emit('trigger-event', {
-                    name: 'onUpdateLineField',
-                    event: { value: { line_id: item.lineId, field: 'bd_number', value } },
-                });
-            }
+            const inputEl = bdRefs[batchKey];
+            const value = inputEl?.value || '';
+            emit('trigger-event', {
+                name: 'onSetBdNumber',
+                event: { value: { batch_key: batchKey, line_ids: batch.items.map(i => i.lineId), bd_number: value } },
+            });
+        }
+
+        function handleSetDoLink(batchKey) {
+            /* wwEditor:start */
+            if (props.wwEditorState?.isEditing) return;
+            /* wwEditor:end */
+            const batch = pipelineBatches.value.find(b => b.key === batchKey);
+            if (!batch) return;
+            const inputEl = doRefs[batchKey];
+            const value = inputEl?.value || '';
+            emit('trigger-event', {
+                name: 'onSetDoLink',
+                event: { value: { batch_key: batchKey, line_ids: batch.items.map(i => i.lineId), do_link: value } },
+            });
         }
 
         // ── Action tracking ──
@@ -430,8 +458,9 @@ export default {
             resolvedLines, linesForDelivery, pipelineBatches,
             activeView,
             getTeammateName, formatDate, statusKey, laborDisplay,
-            handleStatusChange, handleBatchBdChange, handleRetry,
-            pendingAction, actionFailed, actionFailedLabel,
+            handleStatusChange, handleSetBdNumber, handleSetDoLink,
+            setBdRef, setDoRef,
+            handleRetry, pendingAction, actionFailed, actionFailedLabel,
         };
     },
 };
@@ -553,11 +582,20 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .booking-detail-block { margin-bottom: 16px; }
 .booking-detail-title { font-size: 12px; font-weight: 700; color: $gray-700; margin: 0 0 8px 0; }
 
-/* ═══ INLINE INPUT ═══ */
+/* ═══ INLINE INPUT + CONFIRM BUTTON ═══ */
+.input-with-btn { display: flex; align-items: center; gap: 4px; }
 .inline-input {
     width: 80px; height: 28px; padding: 0 6px; border: 1px solid $gray-200; border-radius: 4px;
     font-size: 11px; font-family: $font; color: $gray-900; background: $white; outline: none;
     &::placeholder { color: $gray-400; } &:focus { border-color: $blue; }
+}
+.inline-input--wide { width: 100px; }
+.btn-confirm {
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; padding: 0; border: none; border-radius: 4px;
+    background: $blue; color: $white; cursor: pointer; transition: background 0.15s ease;
+    svg { width: 14px; height: 14px; }
+    &:hover { background: $blue-dark; }
 }
 
 /* ═══ LABOR TAG ═══ */
@@ -571,8 +609,9 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .pipeline-table { min-width: 700px; }
 
 /* ═══ PIPELINE BATCH ROWS ═══ */
-.batch-first-row td { border-top: 2px solid $gray-200; }
-.cell-merged { vertical-align: middle; border-left: 1px solid $gray-200; background: $gray-50; }
+.batch-first-row td { border-top: 2px solid $gray-400; }
+.batch-last-row td { border-bottom: 2px solid $gray-400; }
+.cell-merged { vertical-align: middle; border-left: 2px solid $gray-400; background: $gray-50; }
 .batch-labors { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
 
 /* ═══ RESPONSIVE ═══ */
