@@ -70,12 +70,12 @@
                     <table class="pipe-table">
                         <colgroup>
                             <col style="width:32px" />
-                            <col style="width:110px" />
-                            <col style="width:20%" />
-                            <col style="width:80px" />
+                            <col style="width:120px" />
+                            <col />
+                            <col style="width:100px" />
                             <col style="width:60px" />
                             <col style="width:90px" />
-                            <col style="width:80px" />
+                            <col style="width:50px" />
                         </colgroup>
                         <thead>
                             <tr>
@@ -203,12 +203,12 @@
                                     </button>
                                 </div>
                                 <div class="edit-grid-3">
-                                    <input type="datetime-local" class="edit-input" v-model="fd.deadline" />
-                                    <input type="text" class="edit-input" v-model="fd.pic_name" placeholder="Contact name" />
-                                    <input type="text" class="edit-input" v-model="fd.pic_phone" placeholder="Phone" />
+                                    <div class="edit-field"><label class="edit-label">Deadline</label><input type="datetime-local" class="edit-input" v-model="fd.deadline" /></div>
+                                    <div class="edit-field"><label class="edit-label">Contact Name</label><input type="text" class="edit-input" v-model="fd.pic_name" placeholder="Contact name" /></div>
+                                    <div class="edit-field"><label class="edit-label">Phone</label><input type="text" class="edit-input" v-model="fd.pic_phone" placeholder="Phone" /></div>
                                 </div>
-                                <textarea class="edit-textarea" v-model="fd.address" placeholder="Delivery address" rows="2"></textarea>
-                                <input type="text" class="edit-input" v-model="fd.remarks" placeholder="Remarks (optional)" style="width:100%;margin-top:4px" />
+                                <div class="edit-field" style="margin-top:6px"><label class="edit-label">Address</label><textarea class="edit-textarea" v-model="fd.address" placeholder="Delivery address" rows="2" style="margin-top:0"></textarea></div>
+                                <div class="edit-field" style="margin-top:4px"><label class="edit-label">Remarks</label><input type="text" class="edit-input" v-model="fd.remarks" placeholder="Remarks (optional)" style="width:100%" /></div>
                             </div>
                         </div>
                     </template>
@@ -258,7 +258,7 @@
                             <!-- Allocation rows -->
                             <table class="pipe-table alloc-table">
                                 <colgroup>
-                                    <col style="width:60px" /><col style="width:28%" /><col style="width:22%" /><col style="width:18%" /><col /><col style="width:60px" />
+                                    <col style="width:75px" /><col style="width:26%" /><col style="width:20%" /><col style="width:18%" /><col /><col style="width:60px" />
                                 </colgroup>
                                 <thead><tr><th>Qty</th><th>Destination</th><th>Customization</th><th>Labor</th><th>Mockup</th><th>Action</th></tr></thead>
                                 <tbody>
@@ -311,6 +311,7 @@
                             <div class="pipe-card-header-main">
                                 <span class="pipe-card-title">{{ group.deliveryLabel }}</span>
                                 <span v-if="group.delivery?.deliverytype" class="pipe-dtype-tag">{{ group.delivery.deliverytype }}</span>
+                                <button type="button" class="btn-export" @click="openExportOverlay(group)">Export Order Items</button>
                             </div>
                             <div v-if="group.delivery?.address" class="pipe-card-meta">{{ group.delivery.address }}</div>
                             <div class="pipe-card-meta-row">
@@ -322,16 +323,17 @@
 
                         <table class="pipe-table">
                             <colgroup>
-                                <col style="width:32px" /><col style="width:18%" /><col style="width:80px" /><col style="width:60px" /><col style="width:110px" /><col /><col style="width:130px" />
+                                <col style="width:32px" /><col style="width:110px" /><col style="width:12%" /><col style="width:70px" /><col style="width:65px" /><col style="width:100px" /><col /><col style="width:120px" />
                             </colgroup>
-                            <thead><tr><th></th><th>Model</th><th>Color</th><th class="col-right">Qty</th><th>BD#</th><th>Customization</th><th>DO Folder</th></tr></thead>
+                            <thead><tr><th></th><th>SKU</th><th>Model</th><th>Color</th><th class="col-right">Qty</th><th>BD#</th><th>Customization</th><th>DO Folder</th></tr></thead>
                             <tbody>
                                 <template v-for="batch in group.batches" :key="batch.key">
                                     <tr v-for="(item, itemIdx) in batch.items" :key="item.lineId" :class="{ 'batch-first': itemIdx === 0 }">
                                         <td class="cell-img"><img v-if="item.imagelink" :src="item.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
+                                        <td class="cell-mono">{{ item.sku }}</td>
                                         <td>{{ item.model }}</td>
                                         <td>{{ item.color }}</td>
-                                        <td class="col-right cell-mono">{{ item.qtyDisplay }}</td>
+                                        <td class="col-right cell-mono" style="white-space:nowrap">{{ item.qtyDisplay }}</td>
                                         <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-batch">
                                             <div v-if="batch.bd_number && !isEditing('bd', batch.key)" class="field-display">
                                                 <span class="field-value cell-mono">{{ batch.bd_number }}</span>
@@ -368,6 +370,24 @@
                         </table>
                     </div>
                 </section>
+            </div>
+        </div>
+
+        <!-- Export Overlay -->
+        <div v-if="exportOverlay" class="export-overlay" @click.self="exportOverlay = null">
+            <div class="export-modal">
+                <div class="export-modal-header">
+                    <span class="export-modal-title">Export Order Items</span>
+                    <button type="button" class="btn-icon" @click="exportOverlay = null">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+                <pre class="export-modal-body">{{ exportOverlay.text }}</pre>
+                <div class="export-modal-footer">
+                    <span v-if="exportCopied" class="export-copied">Copied!</span>
+                    <button type="button" class="btn-action btn-action--primary" @click="copyExportText">Copy to Clipboard</button>
+                    <button type="button" class="btn-action btn-action--muted" @click="exportOverlay = null">Close</button>
+                </div>
             </div>
         </div>
     </div>
@@ -488,7 +508,7 @@ export default {
                 if (!batch.bd_number && line.bd_number) batch.bd_number = line.bd_number;
                 if (!batch.do_folder && line.do_folder) batch.do_folder = line.do_folder;
                 if (line.labor) { const label = laborDisplay(line.labor); if (label && !batch._laborSet.has(label)) { batch._laborSet.add(label); batch.labors.push(label); } }
-                batch.items.push({ lineId: line.id, imagelink: line._inv?.imagelink || '', model: line._inv?.model || 'Unknown', color: line._inv?.color || '-', qtyDisplay: `${line.quantity_assigned || 0}/${line._bookingItem?.quantity || '?'}` });
+                batch.items.push({ lineId: line.id, sku: line._bookingItem?.sku || '-', imagelink: line._inv?.imagelink || '', model: line._inv?.model || 'Unknown', color: line._inv?.color || '-', qty: line.quantity_assigned || 0, qtyDisplay: `${line.quantity_assigned || 0}/${line._bookingItem?.quantity || '?'}` });
             }
             const batches = Object.values(batchMap);
             for (const batch of batches) { batch.bdStatus = getFieldStatus(batch._bdNumbers); batch.doStatus = getFieldStatus(batch._doFolders); }
@@ -790,6 +810,29 @@ export default {
             }
         });
 
+        // ── Export overlay ──
+        const exportOverlay = ref(null);
+        const exportCopied = ref(false);
+
+        function openExportOverlay(group) {
+            const lines = [];
+            for (const batch of group.batches) {
+                for (const item of batch.items) {
+                    lines.push(`${item.sku} x${item.qty}`);
+                }
+            }
+            exportOverlay.value = { text: lines.join(',\n') };
+            exportCopied.value = false;
+        }
+
+        function copyExportText() {
+            if (!exportOverlay.value) return;
+            navigator.clipboard.writeText(exportOverlay.value.text).then(() => {
+                exportCopied.value = true;
+                setTimeout(() => { exportCopied.value = false; }, 2000);
+            });
+        }
+
         return {
             currentHeader, currentDeliveries, attachedBookings, resolvedTeammates,
             resolvedLines, linesForDelivery, isSplit, pipelineBatches, pipelineDeliveryGroups,
@@ -807,6 +850,7 @@ export default {
             updateAllocQty, updateAllocField, handleSplitAlloc, removeAllocRow,
             handleSaveOrderPlan, handleSubmitOrderPlan, handleDeleteOrderPlan,
             bookingHeaderLookup,
+            exportOverlay, exportCopied, openExportOverlay, copyExportText,
         };
     },
 };
@@ -936,7 +980,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 }
 .edit-input--title { font-size: 12px; font-weight: 700; flex: 1; }
 .edit-input--date { width: 180px; }
-.edit-input--qty { width: 54px; text-align: center; }
+.edit-input--qty { width: 64px; text-align: center; }
 .edit-select {
     padding: 4px 8px; border: 1px solid $gray-300; font-size: 11px; font-family: $font;
     color: $gray-900; background: $white; outline: none; width: 100%;
@@ -944,6 +988,8 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .edit-select--sm { width: auto; }
 .edit-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
 .edit-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 6px; }
+.edit-field { display: flex; flex-direction: column; gap: 2px; }
+.edit-label { font-size: 9px; font-weight: 700; color: $gray-400; text-transform: uppercase; letter-spacing: 0.04em; }
 .edit-textarea {
     width: 100%; padding: 4px 8px; border: 1px solid $gray-300; font-size: 11px; font-family: $font;
     color: $gray-900; background: $white; outline: none; resize: vertical; margin-top: 6px;
@@ -992,13 +1038,13 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 /* ═══ INLINE INPUT + CONFIRM BUTTON ═══ */
 .input-with-btn { display: flex; align-items: center; gap: 3px; }
 .inline-input {
-    width: 72px; height: 26px; padding: 0 6px; border: 1px solid $gray-200;
+    width: 100%; max-width: 80px; height: 26px; padding: 0 6px; border: 1px solid $gray-200;
     font-size: 11px; font-family: $font; color: $gray-900; background: $white; outline: none;
     transition: border-color 0.15s ease;
     &::placeholder { color: $gray-400; }
     &:focus { border-color: $blue; }
 }
-.inline-input--wide { width: 88px; }
+.inline-input--wide { max-width: 100%; }
 
 /* ═══ FIELD DISPLAY ═══ */
 .field-display { display: flex; align-items: center; gap: 5px; }
@@ -1056,8 +1102,40 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 }
 .batch-first td { border-top: 2px solid var(--c-batch-sep, $gray-200); }
 .pipe-table tbody tr:first-child td { border-top: none; }
-.cell-batch { vertical-align: middle; background: $gray-50; border-left: 1px solid $gray-200; }
+.cell-batch { vertical-align: middle; background: $gray-50; border-left: 1px solid $gray-200; padding: 6px 10px; }
 .thumb-sm { width: 28px; height: 28px; object-fit: cover; display: block; }
+
+/* ═══ EXPORT BUTTON ═══ */
+.btn-export {
+    font-size: 10px; font-weight: 600; font-family: $font; color: $gray-500; background: $white;
+    border: 1px solid $gray-300; padding: 2px 8px; cursor: pointer; margin-left: auto;
+    &:hover { background: $gray-50; color: $gray-700; border-color: $gray-400; }
+}
+
+/* ═══ EXPORT OVERLAY ═══ */
+.export-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 100;
+    background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;
+}
+.export-modal {
+    background: $white; width: 480px; max-width: 90vw; max-height: 80vh; display: flex; flex-direction: column;
+    border: 1px solid $gray-200; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+.export-modal-header {
+    display: flex; align-items: center; justify-content: space-between; padding: 12px 16px;
+    border-bottom: 1px solid $gray-200;
+}
+.export-modal-title { font-size: 13px; font-weight: 700; color: $gray-900; }
+.export-modal-body {
+    padding: 16px; font-size: 12px; font-family: 'SF Mono', 'Fira Code', monospace;
+    line-height: 1.6; color: $gray-700; white-space: pre-wrap; word-break: break-all;
+    overflow-y: auto; flex: 1; margin: 0; background: $gray-50;
+}
+.export-modal-footer {
+    display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-top: 1px solid $gray-200;
+    justify-content: flex-end;
+}
+.export-copied { font-size: 11px; font-weight: 600; color: $green; margin-right: auto; }
 
 /* ═══ RESPONSIVE ═══ */
 @media (max-width: 700px) {
