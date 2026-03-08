@@ -172,8 +172,8 @@
             <!-- ═══ PIPELINE MANAGER VIEW ═══ -->
             <div v-if="activeView === 'pipeline'" class="view-content">
                 <section class="section">
-                    <h3 class="section-heading">Order Pipeline <span class="count-badge">{{ pipelineRows.length }} lines</span></h3>
-                    <div v-if="pipelineRows.length === 0" class="empty-section">No order plan lines found. Create allocations in the Order Plan Manager first.</div>
+                    <h3 class="section-heading">Order Pipeline <span class="count-badge">{{ pipelineBatches.length }} batches</span></h3>
+                    <div v-if="pipelineBatches.length === 0" class="empty-section">No order plan lines found. Create allocations in the Order Plan Manager first.</div>
                     <div v-else class="table-scroll">
                         <table class="data-table pipeline-table">
                             <thead>
@@ -189,24 +189,30 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="row in pipelineRows" :key="row.lineId">
-                                    <td class="cell-img"><img v-if="row.imagelink" :src="row.imagelink" class="thumb" /><span v-else class="thumb-empty">-</span></td>
-                                    <td>{{ row.model }}</td>
-                                    <td>{{ row.color }}</td>
-                                    <td class="col-right cell-mono">{{ row.qtyDisplay }}</td>
-                                    <td>
-                                        <input type="text" class="inline-input" :value="row.bd_number" placeholder="BD#" @change="handleBdChange(row.lineId, $event.target.value)" />
-                                    </td>
-                                    <td>
-                                        <span>{{ row.customization || 'None' }}</span>
-                                        <span v-if="row.laborLabel" class="labor-tag">+ {{ row.laborLabel }}</span>
-                                    </td>
-                                    <td>
-                                        <a v-if="row.mockup_link" :href="row.mockup_link" target="_blank" class="link">DO Link</a>
-                                        <span v-else class="cell-muted">-</span>
-                                    </td>
-                                    <td>{{ row.deliveryLabel }}</td>
-                                </tr>
+                                <template v-for="batch in pipelineBatches" :key="batch.key">
+                                    <tr v-for="(item, itemIdx) in batch.items" :key="item.lineId" :class="{ 'batch-first-row': itemIdx === 0, 'batch-last-row': itemIdx === batch.items.length - 1 }">
+                                        <td class="cell-img"><img v-if="item.imagelink" :src="item.imagelink" class="thumb" /><span v-else class="thumb-empty">-</span></td>
+                                        <td>{{ item.model }}</td>
+                                        <td>{{ item.color }}</td>
+                                        <td class="col-right cell-mono">{{ item.qtyDisplay }}</td>
+                                        <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-merged">
+                                            <input type="text" class="inline-input" :value="batch.bd_number" placeholder="BD#" @change="handleBatchBdChange(batch.key, $event.target.value)" />
+                                        </td>
+                                        <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-merged">
+                                            <span>{{ batch.customization || 'None' }}</span>
+                                            <div v-if="batch.labors.length" class="batch-labors">
+                                                <span v-for="l in batch.labors" :key="l" class="labor-tag">+ {{ l }}</span>
+                                            </div>
+                                        </td>
+                                        <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-merged">
+                                            <a v-if="batch.mockup_link" :href="batch.mockup_link" target="_blank" class="link">DO Link</a>
+                                            <span v-else class="cell-muted">-</span>
+                                        </td>
+                                        <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-merged">
+                                            {{ batch.deliveryLabel }}
+                                        </td>
+                                    </tr>
+                                </template>
                             </tbody>
                         </table>
                     </div>
@@ -300,20 +306,47 @@ export default {
             return resolvedLines.value.filter(l => l.deliveries_headerid === deliveryId);
         }
 
-        // ── Pipeline rows (flat table from orderplan_lines) ──
-        const pipelineRows = computed(() => {
-            return resolvedLines.value.map(line => ({
-                lineId: line.id,
-                imagelink: line._inv?.imagelink || '',
-                model: line._inv?.model || 'Unknown',
-                color: line._inv?.color || '-',
-                qtyDisplay: `${line.quantity_assigned || 0}/${line._bookingItem?.quantity || '?'}`,
-                bd_number: '',
-                customization: line.customization || 'None',
-                laborLabel: laborDisplay(line.labor),
-                mockup_link: line.mockup_link || '',
-                deliveryLabel: line._delivery?.label || 'Unknown',
-            }));
+        // ── Pipeline batches (grouped by delivery + customization) ──
+        // One BD# per customization type per delivery address
+        const pipelineBatches = computed(() => {
+            const batchMap = {};
+            for (const line of resolvedLines.value) {
+                const key = `${line.deliveries_headerid}::${line.customization || 'None'}`;
+                if (!batchMap[key]) {
+                    batchMap[key] = {
+                        key,
+                        deliveries_headerid: line.deliveries_headerid,
+                        customization: line.customization || 'None',
+                        deliveryLabel: line._delivery?.label || 'Unknown',
+                        bd_number: '',
+                        mockup_link: '',
+                        labors: [],
+                        items: [],
+                        _laborSet: new Set(),
+                    };
+                }
+                const batch = batchMap[key];
+                // Collect first available mockup_link for the batch
+                if (!batch.mockup_link && line.mockup_link) {
+                    batch.mockup_link = line.mockup_link;
+                }
+                // Collect unique labor types across items in batch
+                if (line.labor) {
+                    const label = laborDisplay(line.labor);
+                    if (label && !batch._laborSet.has(label)) {
+                        batch._laborSet.add(label);
+                        batch.labors.push(label);
+                    }
+                }
+                batch.items.push({
+                    lineId: line.id,
+                    imagelink: line._inv?.imagelink || '',
+                    model: line._inv?.model || 'Unknown',
+                    color: line._inv?.color || '-',
+                    qtyDisplay: `${line.quantity_assigned || 0}/${line._bookingItem?.quantity || '?'}`,
+                });
+            }
+            return Object.values(batchMap);
         });
 
         // ── View toggle ──
@@ -355,14 +388,19 @@ export default {
             });
         }
 
-        function handleBdChange(lineId, value) {
+        function handleBatchBdChange(batchKey, value) {
             /* wwEditor:start */
             if (props.wwEditorState?.isEditing) return;
             /* wwEditor:end */
-            emit('trigger-event', {
-                name: 'onUpdateLineField',
-                event: { value: { line_id: lineId, field: 'bd_number', value } },
-            });
+            const batch = pipelineBatches.value.find(b => b.key === batchKey);
+            if (!batch) return;
+            // Emit update for all lines in this batch
+            for (const item of batch.items) {
+                emit('trigger-event', {
+                    name: 'onUpdateLineField',
+                    event: { value: { line_id: item.lineId, field: 'bd_number', value } },
+                });
+            }
         }
 
         // ── Action tracking ──
@@ -389,10 +427,10 @@ export default {
 
         return {
             currentHeader, currentDeliveries, attachedBookings,
-            resolvedLines, linesForDelivery, pipelineRows,
+            resolvedLines, linesForDelivery, pipelineBatches,
             activeView,
             getTeammateName, formatDate, statusKey, laborDisplay,
-            handleStatusChange, handleBdChange, handleRetry,
+            handleStatusChange, handleBatchBdChange, handleRetry,
             pendingAction, actionFailed, actionFailedLabel,
         };
     },
@@ -531,6 +569,11 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 /* ═══ TABLE SCROLL ═══ */
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .pipeline-table { min-width: 700px; }
+
+/* ═══ PIPELINE BATCH ROWS ═══ */
+.batch-first-row td { border-top: 2px solid $gray-200; }
+.cell-merged { vertical-align: middle; border-left: 1px solid $gray-200; background: $gray-50; }
+.batch-labors { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
 
 /* ═══ RESPONSIVE ═══ */
 @media (max-width: 700px) {
