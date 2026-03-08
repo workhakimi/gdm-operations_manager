@@ -145,7 +145,7 @@
                                         <td>{{ line._inv?.model || 'Unknown' }}</td>
                                         <td>{{ line._inv?.color || '-' }}</td>
                                         <td class="col-right cell-mono">{{ line.quantity_assigned }}/{{ line._bookingItem?.quantity || '?' }}</td>
-                                        <td><span v-if="line.splitgroupid" class="split-tag">Split</span><span v-else class="cell-muted">-</span></td>
+                                        <td><span v-if="isSplit(line)" class="split-tag">Split</span><span v-else class="cell-muted">-</span></td>
                                         <td>{{ line.customization || 'None' }}</td>
                                         <td>{{ laborDisplay(line.labor) || 'None' }}</td>
                                         <td>
@@ -309,6 +309,19 @@ export default {
             });
         });
 
+        // Count lines per splitgroupid — only "split" when >1 line shares the same group
+        const splitGroupCounts = computed(() => {
+            const m = {};
+            for (const l of currentLines.value) {
+                if (l.splitgroupid) m[l.splitgroupid] = (m[l.splitgroupid] || 0) + 1;
+            }
+            return m;
+        });
+
+        function isSplit(line) {
+            return line.splitgroupid && (splitGroupCounts.value[line.splitgroupid] || 0) > 1;
+        }
+
         function linesForDelivery(deliveryId) {
             return resolvedLines.value.filter(l => l.deliveries_headerid === deliveryId);
         }
@@ -456,7 +469,7 @@ export default {
 
         return {
             currentHeader, currentDeliveries, attachedBookings,
-            resolvedLines, linesForDelivery, pipelineBatches,
+            resolvedLines, linesForDelivery, isSplit, pipelineBatches,
             activeView,
             getTeammateName, formatDate, statusKey, laborDisplay,
             handleStatusChange, handleSetBdNumber, handleSetDoLink,
