@@ -194,10 +194,23 @@
                                         <td>{{ item.color }}</td>
                                         <td class="col-right cell-mono">{{ item.qtyDisplay }}</td>
                                         <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-merged">
-                                            <div class="input-with-btn">
+                                            <!-- Read-only when value exists and not editing -->
+                                            <div v-if="batch.bd_number && !isEditing('bd', batch.key)" class="field-display">
+                                                <span class="field-value cell-mono">{{ batch.bd_number }}</span>
+                                                <span v-if="batch.bdStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines in this batch are missing a BD number"></span>
+                                                <span v-if="batch.bdStatus === 'conflict'" class="status-dot status-dot--error" title="Lines in this batch have different BD numbers"></span>
+                                                <button type="button" class="btn-edit" @click="startEditing('bd', batch.key)" title="Edit BD#">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                                </button>
+                                            </div>
+                                            <!-- Input when empty or editing -->
+                                            <div v-else class="input-with-btn">
                                                 <input type="text" class="inline-input" :ref="el => setBdRef(batch.key, el)" :value="batch.bd_number" placeholder="BD#" />
                                                 <button type="button" class="btn-confirm" @click="handleSetBdNumber(batch.key)" title="Set BD#">
                                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                                </button>
+                                                <button v-if="batch.bd_number" type="button" class="btn-cancel" @click="stopEditing('bd', batch.key)" title="Cancel">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                                                 </button>
                                             </div>
                                         </td>
@@ -208,10 +221,23 @@
                                             </div>
                                         </td>
                                         <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-merged">
-                                            <div class="input-with-btn">
+                                            <!-- Read-only when value exists and not editing -->
+                                            <div v-if="batch.do_folder && !isEditing('do', batch.key)" class="field-display">
+                                                <a :href="batch.do_folder" target="_blank" class="field-value link">DO Folder</a>
+                                                <span v-if="batch.doStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines in this batch are missing a DO link"></span>
+                                                <span v-if="batch.doStatus === 'conflict'" class="status-dot status-dot--error" title="Lines in this batch have different DO links"></span>
+                                                <button type="button" class="btn-edit" @click="startEditing('do', batch.key)" title="Edit DO Link">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                                </button>
+                                            </div>
+                                            <!-- Input when empty or editing -->
+                                            <div v-else class="input-with-btn">
                                                 <input type="text" class="inline-input inline-input--wide" :ref="el => setDoRef(batch.key, el)" :value="batch.do_folder" placeholder="DO Link" />
                                                 <button type="button" class="btn-confirm" @click="handleSetDoLink(batch.key)" title="Set DO Link">
                                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                                </button>
+                                                <button v-if="batch.do_folder" type="button" class="btn-cancel" @click="stopEditing('do', batch.key)" title="Cancel">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                                                 </button>
                                             </div>
                                         </td>
@@ -237,7 +263,7 @@
 </template>
 
 <script>
-import { ref, computed, watch } from 'vue';
+import { ref, reactive, computed, watch } from 'vue';
 
 const LABOR_LABELS = {
     sleeving: 'Box Sleeving',
@@ -333,6 +359,17 @@ export default {
             return resolvedLines.value.filter(l => l.deliveries_headerid === deliveryId);
         }
 
+        // ── Field consistency check ──
+        // Returns: 'ok' (all same non-empty), 'empty' (all empty), 'missing' (some empty), 'conflict' (different values)
+        function getFieldStatus(values) {
+            const nonEmpty = values.filter(v => v);
+            if (nonEmpty.length === 0) return 'empty';
+            const unique = new Set(nonEmpty);
+            if (unique.size > 1) return 'conflict';
+            if (nonEmpty.length < values.length) return 'missing';
+            return 'ok';
+        }
+
         // ── Pipeline batches (grouped by delivery + customization) ──
         // One BD# per customization type per delivery address
         const pipelineBatches = computed(() => {
@@ -351,9 +388,14 @@ export default {
                         labors: [],
                         items: [],
                         _laborSet: new Set(),
+                        _bdNumbers: [],
+                        _doFolders: [],
                     };
                 }
                 const batch = batchMap[key];
+                // Track all bd_numbers and do_folders for consistency checks
+                batch._bdNumbers.push(line.bd_number || '');
+                batch._doFolders.push(line.do_folder || '');
                 // Use bd_number and do_folder from first line that has them
                 if (!batch.bd_number && line.bd_number) {
                     batch.bd_number = line.bd_number;
@@ -377,7 +419,13 @@ export default {
                     qtyDisplay: `${line.quantity_assigned || 0}/${line._bookingItem?.quantity || '?'}`,
                 });
             }
-            return Object.values(batchMap);
+            // Compute consistency status for bd_number and do_folder per batch
+            const batches = Object.values(batchMap);
+            for (const batch of batches) {
+                batch.bdStatus = getFieldStatus(batch._bdNumbers);
+                batch.doStatus = getFieldStatus(batch._doFolders);
+            }
+            return batches;
         });
 
         // ── View toggle ──
@@ -425,6 +473,12 @@ export default {
         function setBdRef(key, el) { if (el) bdRefs[key] = el; }
         function setDoRef(key, el) { if (el) doRefs[key] = el; }
 
+        // ── Editing state for fields with existing values ──
+        const editingFields = reactive({});
+        function isEditing(field, key) { return !!editingFields[`${field}::${key}`]; }
+        function startEditing(field, key) { editingFields[`${field}::${key}`] = true; }
+        function stopEditing(field, key) { delete editingFields[`${field}::${key}`]; }
+
         function handleSetBdNumber(batchKey) {
             /* wwEditor:start */
             if (props.wwEditorState?.isEditing) return;
@@ -437,6 +491,7 @@ export default {
                 name: 'onSetBdNumber',
                 event: { value: { batch_key: batchKey, line_ids: batch.items.map(i => i.lineId), bd_number: value } },
             });
+            stopEditing('bd', batchKey);
         }
 
         function handleSetDoLink(batchKey) {
@@ -451,6 +506,7 @@ export default {
                 name: 'onSetDoLink',
                 event: { value: { batch_key: batchKey, line_ids: batch.items.map(i => i.lineId), do_folder: value } },
             });
+            stopEditing('do', batchKey);
         }
 
         // ── Action tracking ──
@@ -481,7 +537,7 @@ export default {
             activeView,
             getTeammateName, formatDate, statusKey, laborDisplay,
             handleStatusChange, handleSetBdNumber, handleSetDoLink,
-            setBdRef, setDoRef,
+            setBdRef, setDoRef, isEditing, startEditing, stopEditing,
             handleRetry, pendingAction, actionFailed, actionFailedLabel,
         };
     },
@@ -612,6 +668,24 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
     &::placeholder { color: $gray-400; } &:focus { border-color: $blue; }
 }
 .inline-input--wide { width: 100px; }
+
+/* ═══ FIELD DISPLAY (read-only with edit button) ═══ */
+.field-display { display: flex; align-items: center; gap: 4px; }
+.field-value { font-size: 11px; color: $gray-900; }
+.btn-edit {
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; padding: 0; border: none; border-radius: 4px;
+    background: transparent; color: $gray-400; cursor: pointer; transition: all 0.15s ease;
+    svg { width: 13px; height: 13px; }
+    &:hover { background: $gray-100; color: $gray-600; }
+}
+.btn-cancel {
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; padding: 0; border: none; border-radius: 4px;
+    background: $gray-100; color: $gray-500; cursor: pointer; transition: all 0.15s ease;
+    svg { width: 14px; height: 14px; }
+    &:hover { background: $red-50; color: $red; }
+}
 .btn-confirm {
     flex-shrink: 0; display: flex; align-items: center; justify-content: center;
     width: 26px; height: 26px; padding: 0; border: none; border-radius: 4px;
@@ -619,6 +693,13 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
     svg { width: 14px; height: 14px; }
     &:hover { background: $blue-dark; }
 }
+
+/* ═══ STATUS DOT (field consistency indicator) ═══ */
+.status-dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; cursor: help; position: relative;
+}
+.status-dot--warn { background: $amber; }
+.status-dot--error { background: $red; }
 
 /* ═══ SPLIT TAG ═══ */
 .split-tag { display: inline-block; font-size: 10px; font-weight: 600; color: #7c3aed; background: #f5f3ff; padding: 1px 5px; border-radius: 4px; }
