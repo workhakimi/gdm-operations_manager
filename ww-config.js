@@ -61,7 +61,7 @@ export default {
                 value: {
                     batch_key: null,
                     line_ids: [],
-                    do_link: null,
+                    do_folder: null,
                 },
             },
             default: false,

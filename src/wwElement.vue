@@ -211,7 +211,7 @@
                                         </td>
                                         <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-merged">
                                             <div class="input-with-btn">
-                                                <input type="text" class="inline-input inline-input--wide" :ref="el => setDoRef(batch.key, el)" :value="batch.do_link" placeholder="DO Link" />
+                                                <input type="text" class="inline-input inline-input--wide" :ref="el => setDoRef(batch.key, el)" :value="batch.do_folder" placeholder="DO Link" />
                                                 <button type="button" class="btn-confirm" @click="handleSetDoLink(batch.key)" title="Set DO Link">
                                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                                                 </button>
@@ -328,16 +328,19 @@ export default {
                         customization: line.customization || 'None',
                         deliveryLabel: line._delivery?.label || 'Unknown',
                         bd_number: '',
-                        do_link: '',
+                        do_folder: '',
                         labors: [],
                         items: [],
                         _laborSet: new Set(),
                     };
                 }
                 const batch = batchMap[key];
-                // Collect first available mockup_link as default do_link
-                if (!batch.do_link && line.mockup_link) {
-                    batch.do_link = line.mockup_link;
+                // Use bd_number and do_folder from first line that has them
+                if (!batch.bd_number && line.bd_number) {
+                    batch.bd_number = line.bd_number;
+                }
+                if (!batch.do_folder && line.do_folder) {
+                    batch.do_folder = line.do_folder;
                 }
                 // Collect unique labor types across items in batch
                 if (line.labor) {
@@ -427,7 +430,7 @@ export default {
             const value = inputEl?.value || '';
             emit('trigger-event', {
                 name: 'onSetDoLink',
-                event: { value: { batch_key: batchKey, line_ids: batch.items.map(i => i.lineId), do_link: value } },
+                event: { value: { batch_key: batchKey, line_ids: batch.items.map(i => i.lineId), do_folder: value } },
             });
         }
 
@@ -543,7 +546,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .cell-muted { color: $gray-400; }
 .cell-neg { color: $red; font-weight: 700; }
 .cell-img { width: 40px; padding: 4px 8px; }
-.thumb { width: 36px; height: 36px; border-radius: 4px; object-fit: cover; border: 1px solid $gray-200; display: block; }
+.thumb { width: 36px; height: 36px; border-radius: 4px; object-fit: cover; display: block; }
 .thumb-empty { color: $gray-400; }
 
 /* ═══ STATUS ═══ */
@@ -609,9 +612,16 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .pipeline-table { min-width: 700px; }
 
 /* ═══ PIPELINE BATCH ROWS ═══ */
+.pipeline-table { border-collapse: collapse; }
+.pipeline-table td { border-bottom: 1px solid $gray-100; }
 .batch-first-row td { border-top: 2px solid $gray-400; }
-.batch-last-row td { border-bottom: 2px solid $gray-400; }
-.cell-merged { vertical-align: middle; border-left: 2px solid $gray-400; background: $gray-50; }
+.cell-merged {
+    vertical-align: middle;
+    border-left: 2px solid $gray-400;
+    border-top: 2px solid $gray-400;
+    border-bottom: 2px solid $gray-400;
+    background: $gray-50;
+}
 .batch-labors { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
 
 /* ═══ RESPONSIVE ═══ */
