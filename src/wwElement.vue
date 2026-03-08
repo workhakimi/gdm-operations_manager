@@ -613,13 +613,15 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 
 /* ═══ PIPELINE BATCH ROWS ═══ */
 .pipeline-table { border-collapse: collapse; }
-.pipeline-table td { border-bottom: 1px solid $gray-100; }
-.batch-first-row td { border-top: 2px solid $gray-400; }
+.pipeline-table td { border-bottom: 1px solid $gray-200; }
+.pipeline-table tr:last-child td { border-bottom: none; }
+.batch-first-row td { border-top: 2px solid $gray-500; }
+.batch-last-row td { border-bottom: 2px solid $gray-500; }
 .cell-merged {
     vertical-align: middle;
-    border-left: 2px solid $gray-400;
-    border-top: 2px solid $gray-400;
-    border-bottom: 2px solid $gray-400;
+    border-left: 2px solid $gray-500;
+    border-top: 2px solid $gray-500;
+    border-bottom: 2px solid $gray-500;
     background: $gray-50;
 }
 .batch-labors { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
