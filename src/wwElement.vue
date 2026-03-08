@@ -128,18 +128,20 @@
                             <table class="pipe-table">
                                 <colgroup>
                                     <col style="width:36px" />
+                                    <col style="width:120px" />
                                     <col />
-                                    <col style="width:100px" />
-                                    <col style="width:60px" />
-                                    <col style="width:60px" />
-                                    <col style="width:100px" />
                                     <col style="width:90px" />
+                                    <col style="width:55px" />
+                                    <col style="width:45px" />
                                     <col style="width:100px" />
-                                    <col style="width:60px" />
+                                    <col style="width:80px" />
+                                    <col style="width:90px" />
+                                    <col style="width:55px" />
                                 </colgroup>
                                 <thead>
                                     <tr>
                                         <th></th>
+                                        <th>SKU</th>
                                         <th>Model</th>
                                         <th>Color</th>
                                         <th class="col-right">Qty</th>
@@ -153,6 +155,7 @@
                                 <tbody>
                                     <tr v-for="line in linesForDelivery(del.id)" :key="line.id">
                                         <td class="cell-img"><img v-if="line._inv?.imagelink" :src="line._inv.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
+                                        <td class="cell-mono">{{ line._bookingItem?.sku || '-' }}</td>
                                         <td>{{ line._inv?.model || 'Unknown' }}</td>
                                         <td>{{ line._inv?.color || '-' }}</td>
                                         <td class="col-right cell-mono">{{ line.quantity_assigned }}/{{ line._bookingItem?.quantity || '?' }}</td>
