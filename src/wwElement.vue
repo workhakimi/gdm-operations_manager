@@ -680,37 +680,39 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .booking-detail-title { font-size: 12px; font-weight: 700; color: $gray-700; margin: 0 0 8px 0; }
 
 /* ═══ INLINE INPUT + CONFIRM BUTTON ═══ */
-.input-with-btn { display: flex; align-items: center; gap: 4px; }
+.input-with-btn { display: flex; align-items: center; gap: 3px; }
 .inline-input {
-    width: 80px; height: 28px; padding: 0 6px; border: 1px solid $gray-200; border-radius: 4px;
+    width: 90px; height: 30px; padding: 0 8px; border: 1px solid $gray-200; border-radius: 5px;
     font-size: 11px; font-family: $font; color: $gray-900; background: $white; outline: none;
-    &::placeholder { color: $gray-400; } &:focus { border-color: $blue; }
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    &::placeholder { color: $gray-400; }
+    &:focus { border-color: $blue; box-shadow: 0 0 0 2px rgba($blue, 0.1); }
 }
-.inline-input--wide { width: 100px; }
+.inline-input--wide { width: 110px; }
 
 /* ═══ FIELD DISPLAY (read-only with edit button) ═══ */
-.field-display { display: flex; align-items: center; gap: 4px; }
+.field-display { display: flex; align-items: center; gap: 5px; }
 .field-value { font-size: 11px; color: $gray-900; }
 .btn-edit {
     flex-shrink: 0; display: flex; align-items: center; justify-content: center;
     width: 22px; height: 22px; padding: 0; border: none; border-radius: 4px;
     background: transparent; color: $gray-400; cursor: pointer; transition: all 0.15s ease;
-    svg { width: 13px; height: 13px; }
-    &:hover { background: $gray-100; color: $gray-600; }
+    svg { width: 12px; height: 12px; }
+    &:hover { background: $blue-50; color: $blue; }
 }
 .btn-cancel {
     flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-    width: 26px; height: 26px; padding: 0; border: none; border-radius: 4px;
+    width: 28px; height: 28px; padding: 0; border: none; border-radius: 5px;
     background: $gray-100; color: $gray-500; cursor: pointer; transition: all 0.15s ease;
-    svg { width: 14px; height: 14px; }
+    svg { width: 13px; height: 13px; }
     &:hover { background: $red-50; color: $red; }
 }
 .btn-confirm {
     flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-    width: 26px; height: 26px; padding: 0; border: none; border-radius: 4px;
-    background: $blue; color: $white; cursor: pointer; transition: background 0.15s ease;
-    svg { width: 14px; height: 14px; }
-    &:hover { background: $blue-dark; }
+    width: 28px; height: 28px; padding: 0; border: none; border-radius: 5px;
+    background: #1e293b; color: $white; cursor: pointer; transition: background 0.15s ease;
+    svg { width: 13px; height: 13px; }
+    &:hover { background: #334155; }
 }
 
 /* ═══ STATUS DOT (field consistency indicator) ═══ */
@@ -733,29 +735,54 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .pipeline-table { min-width: 700px; }
 
-/* ═══ PIPELINE BATCH ROWS ═══ */
-.pipeline-table { border-collapse: collapse; }
-.pipeline-table td { border-bottom: 1px solid $gray-200; border-right: 1px solid $gray-300; }
-.pipeline-table td:last-child { border-right: none; }
-.pipeline-table thead th { border-bottom: 2px solid $gray-300; border-right: 1px solid $gray-300; }
+/* ═══ PIPELINE TABLE ═══ */
+.pipeline-table {
+    border-collapse: collapse;
+    border: 1px solid $gray-200;
+    border-radius: 6px;
+    overflow: hidden;
+}
+.pipeline-table thead th {
+    background: #1e293b; color: rgba(255,255,255,0.85); font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 12px;
+    border-bottom: none; border-right: 1px solid rgba(255,255,255,0.08);
+}
 .pipeline-table thead th:last-child { border-right: none; }
-.batch-first-row td { border-top: 3px solid $gray-600; }
-.batch-last-row td { border-bottom: 3px solid $gray-600; }
+.pipeline-table td {
+    border-bottom: 1px solid $gray-100;
+    border-right: 1px solid $gray-200;
+    padding: 10px 12px;
+}
+.pipeline-table td:last-child { border-right: none; }
+.pipeline-table tbody tr:hover td { background: #f8fafc; }
+
+/* Batch separator — subtle top line on first row of each batch */
+.batch-first-row td { border-top: 2px solid $gray-300; }
+.pipeline-table tbody > template:first-child .batch-first-row td,
+.pipeline-table tbody tr:first-child td { border-top: none; }
+
+/* Merged cells (BD#, Customization, Documentation) */
 .cell-merged {
     vertical-align: middle;
-    border-left: 3px solid $gray-600;
-    border-bottom: 3px solid $gray-600;
     background: $gray-50;
+    border-right: 1px solid $gray-200;
+}
+
+/* Delivery column — distinct background for the merged delivery cell */
+.cell-delivery {
+    min-width: 180px;
+    background: #f8fafc;
+    border-left: 2px solid $gray-300;
+    padding: 12px 14px;
 }
 .batch-labors { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
 
 /* ═══ DELIVERY DETAIL (Pipeline) ═══ */
-.cell-delivery { min-width: 160px; }
-.delivery-detail { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+.delivery-detail { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
 .delivery-detail-label { font-weight: 700; font-size: 12px; color: $gray-900; }
-.delivery-detail-line { font-size: 11px; color: $gray-600; line-height: 1.4; }
-.delivery-detail-deadline { font-weight: 600; color: $amber; }
-.delivery-detail-remarks { font-size: 10px; color: $gray-400; font-style: italic; margin-top: 3px; }
+.delivery-detail-line { font-size: 11px; color: $gray-600; line-height: 1.5; }
+.delivery-detail-deadline { font-weight: 600; color: #d97706; }
+.delivery-detail-remarks { font-size: 10px; color: $gray-400; font-style: italic; margin-top: 4px; }
 
 /* ═══ RESPONSIVE ═══ */
 @media (max-width: 700px) {
