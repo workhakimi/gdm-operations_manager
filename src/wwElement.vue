@@ -41,45 +41,44 @@
             <section class="section">
                 <h3 class="section-heading">Attached Bookings <span class="count-badge">{{ attachedBookings.length }}</span></h3>
                 <div v-if="attachedBookings.length === 0" class="empty-section">No bookings attached to this order plan.</div>
-                <table v-else class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Booking #</th>
-                            <th>Title</th>
-                            <th>PIC</th>
-                            <th>Status</th>
-                            <th class="col-right">SKUs</th>
-                            <th class="col-right">Total Qty</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="b in attachedBookings" :key="b.id">
-                            <td class="cell-mono">{{ b.bookingnumber }}</td>
-                            <td>{{ b.bookingtitle || '-' }}</td>
-                            <td>{{ b._picName || '-' }}</td>
-                            <td><span class="status-pill" :class="'pill--' + (b.status || 'booked').toLowerCase().replace(/\s+/g, '-')">{{ b.status || 'Booked' }}</span></td>
-                            <td class="col-right">{{ b.unique_skus || 0 }}</td>
-                            <td class="col-right">{{ b.total_quantity || 0 }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <!-- Booking Items Detail (per attached booking) -->
-                <div v-for="booking in attachedBookings" :key="'detail-' + booking.id" class="booking-detail-block">
-                    <table class="data-table">
+
+                <!-- One card per booking -->
+                <div v-for="booking in attachedBookings" :key="booking.id" class="pipe-card">
+                    <div class="pipe-card-header" :style="{ background: content.colorCardHeaderBg, color: content.colorCardHeaderText }">
+                        <div class="pipe-card-header-main">
+                            <span class="pipe-card-title">{{ booking.bookingnumber }}</span>
+                            <span class="status-pill" :class="'pill--' + (booking.status || 'booked').toLowerCase().replace(/\s+/g, '-')">{{ booking.status || 'Booked' }}</span>
+                        </div>
+                        <div class="pipe-card-meta-row">
+                            <span class="pipe-card-meta">{{ booking.bookingtitle || '-' }}</span>
+                            <span v-if="booking._picName" class="pipe-card-contact">{{ booking._picName }}</span>
+                            <span class="pipe-card-meta" style="margin-left:auto">{{ booking.unique_skus || 0 }} SKUs · {{ booking.total_quantity || 0 }} pcs</span>
+                        </div>
+                    </div>
+                    <table class="pipe-table">
+                        <colgroup>
+                            <col style="width:36px" />
+                            <col style="width:130px" />
+                            <col />
+                            <col style="width:120px" />
+                            <col style="width:60px" />
+                            <col style="width:110px" />
+                            <col style="width:80px" />
+                        </colgroup>
                         <thead>
                             <tr>
-                                <th>Image</th>
+                                <th></th>
                                 <th>SKU</th>
                                 <th>Model</th>
                                 <th>Color</th>
                                 <th class="col-right">Qty</th>
                                 <th>Status</th>
-                                <th class="col-right">Balance Ref</th>
+                                <th class="col-right">Bal Ref</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="item in booking._items" :key="item.id">
-                                <td class="cell-img"><img v-if="item._inv?.imagelink" :src="item._inv.imagelink" class="thumb" /><span v-else class="thumb-empty">-</span></td>
+                                <td class="cell-img"><img v-if="item._inv?.imagelink" :src="item._inv.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
                                 <td class="cell-mono">{{ item.sku }}</td>
                                 <td>{{ item._inv?.model || 'Unknown' }}</td>
                                 <td>{{ item._inv?.color || '-' }}</td>
@@ -92,7 +91,7 @@
                                         <option value="Delivered">Delivered</option>
                                     </select>
                                 </td>
-                                <td class="col-right" :class="{ 'cell-neg': (item.balanceref ?? 0) < 0 }">{{ item.balanceref ?? '-' }}</td>
+                                <td class="col-right cell-mono" :class="{ 'cell-neg': (item.balanceref ?? 0) < 0 }">{{ item.balanceref ?? '-' }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -107,28 +106,40 @@
 
             <!-- ═══ ORDER PLAN VIEW ═══ -->
             <div v-if="activeView === 'orderplan'" class="view-content">
-                <!-- Delivery Logistics -->
                 <section class="section">
                     <h3 class="section-heading">Delivery Logistics <span class="count-badge">{{ currentDeliveries.length }}</span></h3>
                     <div v-if="currentDeliveries.length === 0" class="empty-section">No deliveries configured.</div>
 
-                    <div v-for="(del, dIdx) in currentDeliveries" :key="del.id" class="delivery-block">
-                        <h4 class="delivery-title">{{ dIdx + 1 }}. {{ del.label || 'Unnamed Location' }} <span class="delivery-type-tag">{{ del.deliverytype }}</span></h4>
-                        <table class="meta-table">
-                            <tbody>
-                                <tr><td class="meta-label">Address</td><td>{{ del.address || '-' }}</td></tr>
-                                <tr><td class="meta-label">Deadline</td><td>{{ formatDate(del.deadline) || '-' }}</td></tr>
-                                <tr><td class="meta-label">Contact</td><td>{{ del.pic_name || '-' }} · {{ del.pic_phone || '-' }}</td></tr>
-                                <tr v-if="del.remarks"><td class="meta-label">Remarks</td><td>{{ del.remarks }}</td></tr>
-                            </tbody>
-                        </table>
+                    <div v-for="del in currentDeliveries" :key="del.id" class="pipe-card">
+                        <div class="pipe-card-header" :style="{ background: content.colorCardHeaderBg, color: content.colorCardHeaderText }">
+                            <div class="pipe-card-header-main">
+                                <span class="pipe-card-title">{{ del.label || 'Unnamed Location' }}</span>
+                                <span v-if="del.deliverytype" class="pipe-dtype-tag">{{ del.deliverytype }}</span>
+                            </div>
+                            <div v-if="del.address" class="pipe-card-meta">{{ del.address }}</div>
+                            <div class="pipe-card-meta-row">
+                                <span v-if="del.deadline" class="pipe-card-deadline">{{ formatDate(del.deadline) }}</span>
+                                <span v-if="del.pic_name" class="pipe-card-contact">{{ del.pic_name }}<span v-if="del.pic_phone"> · {{ del.pic_phone }}</span></span>
+                            </div>
+                            <div v-if="del.remarks" class="pipe-card-remarks">{{ del.remarks }}</div>
+                        </div>
 
-                        <!-- Lines allocated to this delivery -->
-                        <div v-if="linesForDelivery(del.id).length > 0" class="delivery-lines">
-                            <table class="data-table">
+                        <div v-if="linesForDelivery(del.id).length > 0">
+                            <table class="pipe-table">
+                                <colgroup>
+                                    <col style="width:36px" />
+                                    <col />
+                                    <col style="width:100px" />
+                                    <col style="width:60px" />
+                                    <col style="width:60px" />
+                                    <col style="width:100px" />
+                                    <col style="width:90px" />
+                                    <col style="width:100px" />
+                                    <col style="width:60px" />
+                                </colgroup>
                                 <thead>
                                     <tr>
-                                        <th>Image</th>
+                                        <th></th>
                                         <th>Model</th>
                                         <th>Color</th>
                                         <th class="col-right">Qty</th>
@@ -141,7 +152,7 @@
                                 </thead>
                                 <tbody>
                                     <tr v-for="line in linesForDelivery(del.id)" :key="line.id">
-                                        <td class="cell-img"><img v-if="line._inv?.imagelink" :src="line._inv.imagelink" class="thumb" /><span v-else class="thumb-empty">-</span></td>
+                                        <td class="cell-img"><img v-if="line._inv?.imagelink" :src="line._inv.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
                                         <td>{{ line._inv?.model || 'Unknown' }}</td>
                                         <td>{{ line._inv?.color || '-' }}</td>
                                         <td class="col-right cell-mono">{{ line.quantity_assigned }}/{{ line._bookingItem?.quantity || '?' }}</td>
@@ -164,7 +175,6 @@
                         <div v-else class="empty-section empty-section--sm">No items allocated to this delivery.</div>
                     </div>
                 </section>
-
             </div>
 
             <!-- ═══ PIPELINE MANAGER VIEW ═══ -->
@@ -621,21 +631,12 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 }
 .meta-label { font-weight: 700; color: $gray-500; text-transform: uppercase; font-size: 10px; letter-spacing: 0.04em; width: 140px; white-space: nowrap; }
 
-/* ═══ DATA TABLE ═══ */
-.data-table {
-    width: 100%; border-collapse: collapse; background: $white; border: 1px solid $gray-200; overflow: hidden;
-    th { padding: 8px 10px; font-size: 10px; font-weight: 700; color: $gray-400; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid $gray-200; text-align: left; background: $gray-50; }
-    td { padding: 8px 10px; font-size: 12px; border-bottom: 1px solid $gray-50; vertical-align: middle; }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: $gray-50; }
-}
+/* ═══ SHARED TABLE HELPERS ═══ */
 .col-right { text-align: right; }
 .cell-mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px; }
 .cell-muted { color: $gray-400; }
 .cell-neg { color: $red; font-weight: 700; }
-.cell-img { width: 40px; padding: 4px 8px; }
-.thumb { width: 36px; height: 36px; object-fit: cover; display: block; }
-.thumb-empty { color: $gray-400; }
+.cell-img { width: 36px; padding: 4px 6px; }
 
 /* ═══ STATUS ═══ */
 .status-pill { display: inline-block; padding: 2px 8px; font-size: 10px; font-weight: 600; }
@@ -663,15 +664,6 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 }
 .toggle-btn--active { color: $blue; border-bottom-color: $blue; }
 
-/* ═══ DELIVERY BLOCK ═══ */
-.delivery-block { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid $gray-200; &:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; } }
-.delivery-title { font-size: 13px; font-weight: 700; color: $gray-900; margin: 0 0 8px 0; }
-.delivery-type-tag { font-size: 10px; font-weight: 600; color: $gray-500; background: $gray-100; padding: 2px 6px; margin-left: 4px; }
-.delivery-lines { margin-top: 10px; }
-
-/* ═══ BOOKING DETAIL ═══ */
-.booking-detail-block { margin-bottom: 16px; }
-.booking-detail-title { font-size: 12px; font-weight: 700; color: $gray-700; margin: 0 0 8px 0; }
 
 /* ═══ INLINE INPUT + CONFIRM BUTTON ═══ */
 .input-with-btn { display: flex; align-items: center; gap: 3px; }
