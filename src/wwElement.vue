@@ -737,26 +737,26 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
     margin-bottom: 12px; background: $white;
 }
 .pipe-card-header {
-    background: #1e293b; color: $white; padding: 12px 16px;
+    background: #f1f5f9; border-bottom: 1px solid $gray-200; padding: 12px 16px;
 }
-.pipe-card-header-main { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.pipe-card-title { font-size: 13px; font-weight: 700; }
+.pipe-card-header-main { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+.pipe-card-title { font-size: 13px; font-weight: 700; color: $gray-900; }
 .pipe-dtype-tag {
     font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
-    background: rgba(255,255,255,0.12); padding: 2px 7px; border-radius: 3px; color: rgba(255,255,255,0.7);
+    background: $gray-200; padding: 2px 7px; border-radius: 3px; color: $gray-600;
 }
-.pipe-card-meta { font-size: 11px; color: rgba(255,255,255,0.6); line-height: 1.4; }
+.pipe-card-meta { font-size: 11px; color: $gray-500; line-height: 1.4; }
 .pipe-card-meta-row { display: flex; align-items: center; gap: 12px; margin-top: 2px; }
-.pipe-card-deadline { font-size: 11px; font-weight: 600; color: #fbbf24; }
-.pipe-card-contact { font-size: 11px; color: rgba(255,255,255,0.5); }
-.pipe-card-remarks { font-size: 10px; color: rgba(255,255,255,0.35); font-style: italic; margin-top: 4px; }
+.pipe-card-deadline { font-size: 11px; font-weight: 600; color: #b45309; }
+.pipe-card-contact { font-size: 11px; color: $gray-400; }
+.pipe-card-remarks { font-size: 10px; color: $gray-400; font-style: italic; margin-top: 4px; }
 
 /* Batch inside a card */
 .pipe-batch { border-top: 1px solid $gray-200; }
 .pipe-batch:first-child { border-top: none; }
 .pipe-batch-bar {
     display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-    padding: 10px 16px; background: $gray-50; border-bottom: 1px solid $gray-100;
+    padding: 10px 16px; background: $white; border-bottom: 1px solid $gray-100;
 }
 .pipe-batch-field { display: flex; align-items: center; gap: 6px; }
 .pipe-batch-label {
@@ -767,11 +767,11 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 
 /* Items table inside batch */
 .pipe-items-table {
-    width: 100%; border-collapse: collapse;
-    th { padding: 6px 16px; font-size: 9px; font-weight: 700; color: $gray-400; text-transform: uppercase; letter-spacing: 0.04em; text-align: left; border-bottom: 1px solid $gray-100; background: $white; }
+    width: 100%; border-collapse: collapse; background: $white;
+    th { padding: 6px 16px; font-size: 9px; font-weight: 700; color: $gray-400; text-transform: uppercase; letter-spacing: 0.04em; text-align: left; border-bottom: 1px solid $gray-100; }
     td { padding: 8px 16px; font-size: 12px; border-bottom: 1px solid $gray-50; vertical-align: middle; }
     tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #f8fafc; }
+    tr:hover td { background: $gray-50; }
 }
 .pit-img { width: 44px; }
 .batch-labors { display: flex; flex-wrap: wrap; gap: 3px; }
