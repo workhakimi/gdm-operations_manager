@@ -55,46 +55,48 @@
                             <span class="pipe-card-meta" style="margin-left:auto">{{ booking.unique_skus || 0 }} SKUs · {{ booking.total_quantity || 0 }} pcs</span>
                         </div>
                     </div>
-                    <table class="pipe-table">
-                        <colgroup>
-                            <col style="width:32px" />
-                            <col style="width:120px" />
-                            <col />
-                            <col style="width:100px" />
-                            <col style="width:60px" />
-                            <col style="width:90px" />
-                            <col style="width:50px" />
-                        </colgroup>
-                        <thead>
-                            <tr>
-                                <th></th>
-                                <th>SKU</th>
-                                <th>Model</th>
-                                <th>Color</th>
-                                <th class="col-left">Qty</th>
-                                <th>Status</th>
-                                <th class="col-left">Bal Ref</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="item in booking._items" :key="item.id">
-                                <td class="cell-img"><img v-if="item._inv?.imagelink" :src="item._inv.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
-                                <td class="cell-mono">{{ item.sku }}</td>
-                                <td>{{ item._inv?.model || 'Unknown' }}</td>
-                                <td>{{ item._inv?.color || '-' }}</td>
-                                <td class="col-left">{{ item.quantity }}</td>
-                                <td>
-                                    <select class="status-select" :class="'ss--' + statusKey(item.status)" :value="item.status || 'Booked'" @change="handleStatusChange(item.id, $event.target.value)">
-                                        <option value="Booked">Booked</option>
-                                        <option value="Issue Raised">Issue Raised</option>
-                                        <option value="Processing">Processing</option>
-                                        <option value="Delivered">Delivered</option>
-                                    </select>
-                                </td>
-                                <td class="col-left cell-mono" :class="{ 'cell-neg': (item.balanceref ?? 0) < 0 }">{{ item.balanceref ?? '-' }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="table-scroll">
+                        <table class="pipe-table">
+                            <colgroup>
+                                <col style="width:32px" />
+                                <col style="width:120px" />
+                                <col />
+                                <col style="width:100px" />
+                                <col style="width:60px" />
+                                <col style="width:90px" />
+                                <col style="width:50px" />
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>SKU</th>
+                                    <th>Model</th>
+                                    <th>Color</th>
+                                    <th class="col-left">Qty</th>
+                                    <th>Status</th>
+                                    <th class="col-left">Bal Ref</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="item in booking._items" :key="item.id">
+                                    <td class="cell-img"><img v-if="item._inv?.imagelink" :src="item._inv.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
+                                    <td class="cell-mono">{{ item.sku }}</td>
+                                    <td>{{ item._inv?.model || 'Unknown' }}</td>
+                                    <td>{{ item._inv?.color || '-' }}</td>
+                                    <td class="col-left">{{ item.quantity }}</td>
+                                    <td>
+                                        <select class="status-select" :class="'ss--' + statusKey(item.status)" :value="item.status || 'Booked'" @change="handleStatusChange(item.id, $event.target.value)">
+                                            <option value="Booked">Booked</option>
+                                            <option value="Issue Raised">Issue Raised</option>
+                                            <option value="Processing">Processing</option>
+                                            <option value="Delivered">Delivered</option>
+                                        </select>
+                                    </td>
+                                    <td class="col-left cell-mono" :class="{ 'cell-neg': (item.balanceref ?? 0) < 0 }">{{ item.balanceref ?? '-' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
 
@@ -166,7 +168,7 @@
                                 </div>
                                 <div v-if="del.remarks" class="pipe-card-remarks">{{ del.remarks }}</div>
                             </div>
-                            <div v-if="linesForDelivery(del.id).length > 0">
+                            <div v-if="linesForDelivery(del.id).length > 0" class="table-scroll">
                                 <table class="pipe-table">
                                     <colgroup>
                                         <col style="width:32px" /><col style="width:110px" /><col style="width:14%" /><col style="width:70px" /><col style="width:55px" /><col style="width:45px" /><col style="width:110px" /><col style="width:80px" /><col style="width:85px" /><col style="width:60px" />
@@ -268,45 +270,47 @@
                             </div>
 
                             <!-- Allocation rows -->
-                            <table class="pipe-table alloc-table">
-                                <colgroup>
-                                    <col style="width:75px" /><col style="width:26%" /><col style="width:20%" /><col style="width:18%" /><col /><col style="width:60px" />
-                                </colgroup>
-                                <thead><tr><th>Qty</th><th>Destination</th><th>Customization</th><th>Labor</th><th>Mockup</th><th>Action</th></tr></thead>
-                                <tbody>
-                                    <tr v-for="(alloc, aIdx) in getAllocs(fabId, item.id)" :key="alloc._uid" :class="{ 'alloc-row--split': getAllocs(fabId, item.id).length > 1 }">
-                                        <td><input type="number" class="edit-input edit-input--qty" :value="alloc.quantity_assigned" @input="updateAllocQty(fabId, item.id, aIdx, $event)" min="0" /></td>
-                                        <td>
-                                            <select class="edit-select" :value="alloc.deliveries_uid" @change="updateAllocField(fabId, item.id, aIdx, 'deliveries_uid', $event.target.value)">
-                                                <option value="">Select delivery...</option>
-                                                <option v-for="fd in formDeliveries" :key="fd._uid" :value="fd._uid">{{ fd.label || 'Unnamed' }} ({{ fd.deliverytype || '?' }})</option>
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <select class="edit-select" :value="alloc.customization" @change="updateAllocField(fabId, item.id, aIdx, 'customization', $event.target.value)">
-                                                <option v-for="opt in custOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <select class="edit-select" :value="alloc.labor" @change="updateAllocField(fabId, item.id, aIdx, 'labor', $event.target.value)">
-                                                <option v-for="opt in labOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <input v-if="alloc.customization && alloc.customization !== 'None'" type="text" class="edit-input" :value="alloc.mockup_link" @input="updateAllocField(fabId, item.id, aIdx, 'mockup_link', $event.target.value)" placeholder="URL" />
-                                            <span v-else class="cell-muted">-</span>
-                                        </td>
-                                        <td class="alloc-actions">
-                                            <button type="button" class="btn-icon" :class="{ 'btn-icon--disabled': alloc.quantity_assigned < 2 }" :disabled="alloc.quantity_assigned < 2" @click="handleSplitAlloc(fabId, item.id, aIdx)" title="Split">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                                            </button>
-                                            <button v-if="getAllocs(fabId, item.id).length > 1" type="button" class="btn-icon btn-icon--danger" @click="removeAllocRow(fabId, item.id, aIdx)" title="Remove split">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <div class="table-scroll">
+                                <table class="pipe-table alloc-table">
+                                    <colgroup>
+                                        <col style="width:75px" /><col style="width:26%" /><col style="width:20%" /><col style="width:18%" /><col /><col style="width:60px" />
+                                    </colgroup>
+                                    <thead><tr><th>Qty</th><th>Destination</th><th>Customization</th><th>Labor</th><th>Mockup</th><th>Action</th></tr></thead>
+                                    <tbody>
+                                        <tr v-for="(alloc, aIdx) in getAllocs(fabId, item.id)" :key="alloc._uid" :class="{ 'alloc-row--split': getAllocs(fabId, item.id).length > 1 }">
+                                            <td><input type="number" class="edit-input edit-input--qty" :value="alloc.quantity_assigned" @input="updateAllocQty(fabId, item.id, aIdx, $event)" min="0" /></td>
+                                            <td>
+                                                <select class="edit-select" :value="alloc.deliveries_uid" @change="updateAllocField(fabId, item.id, aIdx, 'deliveries_uid', $event.target.value)">
+                                                    <option value="">Select delivery...</option>
+                                                    <option v-for="fd in formDeliveries" :key="fd._uid" :value="fd._uid">{{ fd.label || 'Unnamed' }} ({{ fd.deliverytype || '?' }})</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select class="edit-select" :value="alloc.customization" @change="updateAllocField(fabId, item.id, aIdx, 'customization', $event.target.value)">
+                                                    <option v-for="opt in custOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select class="edit-select" :value="alloc.labor" @change="updateAllocField(fabId, item.id, aIdx, 'labor', $event.target.value)">
+                                                    <option v-for="opt in labOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input v-if="alloc.customization && alloc.customization !== 'None'" type="text" class="edit-input" :value="alloc.mockup_link" @input="updateAllocField(fabId, item.id, aIdx, 'mockup_link', $event.target.value)" placeholder="URL" />
+                                                <span v-else class="cell-muted">-</span>
+                                            </td>
+                                            <td class="alloc-actions">
+                                                <button type="button" class="btn-icon" :class="{ 'btn-icon--disabled': alloc.quantity_assigned < 2 }" :disabled="alloc.quantity_assigned < 2" @click="handleSplitAlloc(fabId, item.id, aIdx)" title="Split">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                                </button>
+                                                <button v-if="getAllocs(fabId, item.id).length > 1" type="button" class="btn-icon btn-icon--danger" @click="removeAllocRow(fabId, item.id, aIdx)" title="Remove split">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -315,7 +319,7 @@
             <!-- ═══ PIPELINE MANAGER VIEW ═══ -->
             <div v-if="activeView === 'pipeline'" class="view-content">
                 <div v-if="(currentHeader.status || '').toLowerCase() === 'submitted'" class="edit-bar">
-                    <button type="button" class="btn-action btn-action--muted" @click="handleUnsubmitOrderPlan">Unsubmit to Draft</button>
+                    <button type="button" class="btn-action btn-action--dark" @click="handleUnsubmitOrderPlan">Unsubmit to Draft</button>
                 </div>
                 <section class="section">
                     <h3 class="section-heading">Order Pipeline <span class="count-badge">{{ pipelineBatches.length }} batches</span></h3>
@@ -335,56 +339,58 @@
                             <div v-if="group.delivery?.remarks" class="pipe-card-remarks">{{ group.delivery.remarks }}</div>
                         </div>
 
-                        <table class="pipe-table">
-                            <colgroup>
-                                <col style="width:32px" /><col style="width:110px" /><col style="width:12%" /><col style="width:100px" /><col style="width:85px" /><col style="width:80px" /><col style="width:100px" /><col style="width:80px" /><col style="width:120px" />
-                            </colgroup>
-                            <thead><tr><th></th><th>SKU</th><th>Model</th><th>Color</th><th>Qty</th><th>Status</th><th>BD#</th><th>Customization</th><th>DO Folder</th></tr></thead>
-                            <tbody>
-                                <template v-for="batch in group.batches" :key="batch.key">
-                                    <tr v-for="(item, itemIdx) in batch.items" :key="item.lineId" :class="{ 'batch-first': itemIdx === 0 }">
-                                        <td class="cell-img"><img v-if="item.imagelink" :src="item.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
-                                        <td class="cell-mono">{{ item.sku }}</td>
-                                        <td>{{ item.model }}</td>
-                                        <td>{{ item.color }}</td>
-                                        <td class="cell-mono" style="white-space:nowrap">{{ item.qtyDisplay }}</td>
-                                        <td><span class="status-tag" :class="'st--' + statusKey(item.status)">{{ item.status }}</span></td>
-                                        <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-batch">
-                                            <div v-if="batch.bd_number && !isEditing('bd', batch.key)" class="field-display">
-                                                <span class="field-value cell-mono">{{ batch.bd_number }}</span>
-                                                <span v-if="batch.bdStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines missing BD#"></span>
-                                                <span v-if="batch.bdStatus === 'conflict'" class="status-dot status-dot--error" title="Conflicting BD numbers"></span>
-                                                <button type="button" class="btn-edit" @click="startEditing('bd', batch.key)" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-                                                <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
-                                            </div>
-                                            <div v-else class="input-with-btn">
-                                                <input type="text" class="inline-input" :ref="el => setBdRef(batch.key, el)" :value="batch.bd_number" placeholder="BD#" />
-                                                <button type="button" class="btn-confirm" @click="handleSetBdNumber(batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
-                                                <button v-if="batch.bd_number" type="button" class="btn-cancel" @click="stopEditing('bd', batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-                                                <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
-                                            </div>
-                                        </td>
-                                        <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-batch">
-                                            <span>{{ batch.customization || 'None' }}</span>
-                                            <span v-for="l in batch.labors" :key="l" class="labor-tag">{{ l }}</span>
-                                        </td>
-                                        <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-batch">
-                                            <div v-if="batch.do_folder && !isEditing('do', batch.key)" class="field-display">
-                                                <a :href="batch.do_folder" target="_blank" class="field-value link">Open</a>
-                                                <span v-if="batch.doStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines missing DO link"></span>
-                                                <span v-if="batch.doStatus === 'conflict'" class="status-dot status-dot--error" title="Conflicting DO links"></span>
-                                                <button type="button" class="btn-edit" @click="startEditing('do', batch.key)" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-                                            </div>
-                                            <div v-else class="input-with-btn">
-                                                <input type="text" class="inline-input inline-input--wide" :ref="el => setDoRef(batch.key, el)" :value="batch.do_folder" placeholder="Paste link" />
-                                                <button type="button" class="btn-confirm" @click="handleSetDoLink(batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
-                                                <button v-if="batch.do_folder" type="button" class="btn-cancel" @click="stopEditing('do', batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
+                        <div class="table-scroll">
+                            <table class="pipe-table">
+                                <colgroup>
+                                    <col style="width:32px" /><col style="width:110px" /><col style="width:12%" /><col style="width:100px" /><col style="width:85px" /><col style="width:80px" /><col style="width:100px" /><col style="width:80px" /><col style="width:120px" />
+                                </colgroup>
+                                <thead><tr><th></th><th>SKU</th><th>Model</th><th>Color</th><th>Qty</th><th>Status</th><th>BD#</th><th>Customization</th><th>DO Folder</th></tr></thead>
+                                <tbody>
+                                    <template v-for="batch in group.batches" :key="batch.key">
+                                        <tr v-for="(item, itemIdx) in batch.items" :key="item.lineId" :class="{ 'batch-first': itemIdx === 0 }">
+                                            <td class="cell-img"><img v-if="item.imagelink" :src="item.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
+                                            <td class="cell-mono">{{ item.sku }}</td>
+                                            <td>{{ item.model }}</td>
+                                            <td>{{ item.color }}</td>
+                                            <td class="cell-mono" style="white-space:nowrap">{{ item.qtyDisplay }}</td>
+                                            <td><span class="status-tag" :class="'st--' + statusKey(item.status)">{{ item.status }}</span></td>
+                                            <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-batch">
+                                                <div v-if="batch.bd_number && !isEditing('bd', batch.key)" class="field-display">
+                                                    <span class="field-value cell-mono">{{ batch.bd_number }}</span>
+                                                    <span v-if="batch.bdStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines missing BD#"></span>
+                                                    <span v-if="batch.bdStatus === 'conflict'" class="status-dot status-dot--error" title="Conflicting BD numbers"></span>
+                                                    <button type="button" class="btn-edit" @click="startEditing('bd', batch.key)" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                                                    <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
+                                                </div>
+                                                <div v-else class="input-with-btn">
+                                                    <input type="text" class="inline-input" :ref="el => setBdRef(batch.key, el)" :value="batch.bd_number" placeholder="BD#" />
+                                                    <button type="button" class="btn-confirm" @click="handleSetBdNumber(batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+                                                    <button v-if="batch.bd_number" type="button" class="btn-cancel" @click="stopEditing('bd', batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                                                    <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
+                                                </div>
+                                            </td>
+                                            <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-batch">
+                                                <span>{{ batch.customization || 'None' }}</span>
+                                                <span v-for="l in batch.labors" :key="l" class="labor-tag">{{ l }}</span>
+                                            </td>
+                                            <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-batch">
+                                                <div v-if="batch.do_folder && !isEditing('do', batch.key)" class="field-display">
+                                                    <a :href="batch.do_folder" target="_blank" class="field-value link">Open</a>
+                                                    <span v-if="batch.doStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines missing DO link"></span>
+                                                    <span v-if="batch.doStatus === 'conflict'" class="status-dot status-dot--error" title="Conflicting DO links"></span>
+                                                    <button type="button" class="btn-edit" @click="startEditing('do', batch.key)" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                                                </div>
+                                                <div v-else class="input-with-btn">
+                                                    <input type="text" class="inline-input inline-input--wide" :ref="el => setDoRef(batch.key, el)" :value="batch.do_folder" placeholder="Paste link" />
+                                                    <button type="button" class="btn-confirm" @click="handleSetDoLink(batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+                                                    <button v-if="batch.do_folder" type="button" class="btn-cancel" @click="stopEditing('do', batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
             </div>
@@ -995,6 +1001,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .btn-action--submit { background: $green; color: $white; &:hover { background: darken($green, 5%); } }
 .btn-action--muted { background: $gray-100; color: $gray-600; &:hover { background: $gray-200; } }
 .btn-action--danger { background: $red-50; color: $red; &:hover { background: $red; color: $white; } }
+.btn-action--dark { background: #111827; color: $white; &:hover { background: #1f2937; } }
 
 .btn-add {
     font-size: 11px; font-weight: 600; font-family: $font; color: $blue; background: $blue-50;
@@ -1143,6 +1150,9 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .cell-batch { vertical-align: middle; background: $gray-50; border-left: 1px solid $gray-200; padding: 6px 10px; }
 .thumb-sm { width: 28px; height: 28px; object-fit: cover; display: block; }
 
+/* ═══ TABLE SCROLL (responsive) ═══ */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
 /* ═══ EXPORT BUTTON ═══ */
 /* ═══ EXPORT OVERLAY ═══ */
 .export-overlay {
@@ -1170,11 +1180,16 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .export-copied { font-size: 11px; font-weight: 600; color: $green; margin-right: auto; }
 
 /* ═══ RESPONSIVE ═══ */
+@media (max-width: 1024px) {
+    .pipe-table { min-width: 700px; }
+    .alloc-table { min-width: 580px; }
+}
 @media (max-width: 700px) {
     .section { padding: 12px; }
     .header-bar { padding: 10px 12px; flex-wrap: wrap; }
     .meta-label { width: 100px; }
     .toggle-btn { padding: 8px 12px; font-size: 11px; }
     .edit-bar { flex-wrap: wrap; }
+    .pipe-table { min-width: 750px; }
 }
 </style>
