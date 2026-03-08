@@ -215,8 +215,15 @@
                                                 </button>
                                             </div>
                                         </td>
-                                        <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-merged">
-                                            {{ batch.deliveryLabel }}
+                                        <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-merged cell-delivery">
+                                            <div class="delivery-detail">
+                                                <span class="delivery-detail-label">{{ batch.deliveryLabel }}</span>
+                                                <span v-if="batch.delivery?.deliverytype" class="delivery-type-tag">{{ batch.delivery.deliverytype }}</span>
+                                            </div>
+                                            <div v-if="batch.delivery?.address" class="delivery-detail-line">{{ batch.delivery.address }}</div>
+                                            <div v-if="batch.delivery?.deadline" class="delivery-detail-line delivery-detail-deadline">{{ formatDate(batch.delivery.deadline) }}</div>
+                                            <div v-if="batch.delivery?.pic_name" class="delivery-detail-line">{{ batch.delivery.pic_name }}<span v-if="batch.delivery?.pic_phone"> · {{ batch.delivery.pic_phone }}</span></div>
+                                            <div v-if="batch.delivery?.remarks" class="delivery-detail-remarks">{{ batch.delivery.remarks }}</div>
                                         </td>
                                     </tr>
                                 </template>
@@ -338,6 +345,7 @@ export default {
                         deliveries_headerid: line.deliveries_headerid,
                         customization: line.customization || 'None',
                         deliveryLabel: line._delivery?.label || 'Unknown',
+                        delivery: line._delivery || null,
                         bd_number: '',
                         do_folder: '',
                         labors: [],
@@ -638,6 +646,14 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
     background: $gray-50;
 }
 .batch-labors { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+
+/* ═══ DELIVERY DETAIL (Pipeline) ═══ */
+.cell-delivery { min-width: 160px; }
+.delivery-detail { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+.delivery-detail-label { font-weight: 700; font-size: 12px; color: $gray-900; }
+.delivery-detail-line { font-size: 11px; color: $gray-600; line-height: 1.4; }
+.delivery-detail-deadline { font-weight: 600; color: $amber; }
+.delivery-detail-remarks { font-size: 10px; color: $gray-400; font-style: italic; margin-top: 3px; }
 
 /* ═══ RESPONSIVE ═══ */
 @media (max-width: 700px) {
