@@ -9,11 +9,6 @@ export default {
                 properties: ['selectedOrderPlanId', 'actionStatus'],
             },
             {
-                label: 'Pipeline Data',
-                isCollapsible: true,
-                properties: ['opsPipelineData'],
-            },
-            {
                 label: 'Order Plan Data',
                 isCollapsible: true,
                 properties: [
@@ -37,34 +32,24 @@ export default {
     },
     triggerEvents: [
         {
-            name: 'onCreatePipeline',
-            label: { en: 'On Create Pipeline' },
-            event: {
-                value: {
-                    orderplan_header_id: null,
-                    structure_data: {},
-                },
-            },
-            default: true,
-        },
-        {
-            name: 'onUpdatePipeline',
-            label: { en: 'On Update Pipeline' },
-            event: {
-                value: {
-                    pipeline_id: null,
-                    structure_data: {},
-                },
-            },
-            default: false,
-        },
-        {
             name: 'onUpdateItemStatus',
             label: { en: 'On Update Item Status' },
             event: {
                 value: {
                     booking_item_id: null,
                     new_status: null,
+                },
+            },
+            default: true,
+        },
+        {
+            name: 'onUpdateLineField',
+            label: { en: 'On Update Line Field' },
+            event: {
+                value: {
+                    line_id: null,
+                    field: null,
+                    value: null,
                 },
             },
             default: false,
@@ -97,19 +82,6 @@ export default {
             },
             /* wwEditor:end */
         },
-        opsPipelineData: {
-            label: { en: 'Operations Pipeline Headers' },
-            type: 'ObjectList',
-            section: 'settings',
-            bindable: true,
-            defaultValue: [],
-            /* wwEditor:start */
-            bindingValidation: {
-                type: 'array',
-                tooltip: 'Array of ops_pipeline_headers rows: { id, created_at, submitted_at, orderplan_headers_id, structure_data }',
-            },
-            /* wwEditor:end */
-        },
         orderplanHeadersData: {
             label: { en: 'Order Plan Headers' },
             type: 'ObjectList',
@@ -119,7 +91,7 @@ export default {
             /* wwEditor:start */
             bindingValidation: {
                 type: 'array',
-                tooltip: 'Array of orderplan_headers rows: { id, opid, title, pic_bda, pic_ops, quoteref, invoiceref, status, created_at, updated_at }',
+                tooltip: 'Array of orderplan_headers rows: { id, opid, title, pic_bda, pic_ops, quoteref, invoiceref, status, created_at, updated_at, submitted_at }',
             },
             /* wwEditor:end */
         },
