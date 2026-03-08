@@ -172,92 +172,92 @@
                 <section class="section">
                     <h3 class="section-heading">Order Pipeline <span class="count-badge">{{ pipelineBatches.length }} batches</span></h3>
                     <div v-if="pipelineBatches.length === 0" class="empty-section">No order plan lines found. Create allocations in the Order Plan Manager first.</div>
-                    <div v-else class="table-scroll">
-                        <table class="data-table pipeline-table">
-                            <thead>
-                                <tr>
-                                    <th>Image</th>
-                                    <th>Model</th>
-                                    <th>Color</th>
-                                    <th class="col-right">qty</th>
-                                    <th>BD#</th>
-                                    <th>Customization &amp; Labor</th>
-                                    <th>Documentation</th>
-                                    <th>Delivery Location</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <template v-for="group in pipelineDeliveryGroups" :key="group.deliveries_headerid">
-                                    <template v-for="(batch, batchIdx) in group.batches" :key="batch.key">
-                                        <tr v-for="(item, itemIdx) in batch.items" :key="item.lineId" :class="{ 'batch-first-row': itemIdx === 0, 'batch-last-row': itemIdx === batch.items.length - 1 }">
-                                            <td class="cell-img"><img v-if="item.imagelink" :src="item.imagelink" class="thumb" /><span v-else class="thumb-empty">-</span></td>
-                                            <td>{{ item.model }}</td>
-                                            <td>{{ item.color }}</td>
-                                            <td class="col-right cell-mono">{{ item.qtyDisplay }}</td>
-                                            <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-merged">
-                                                <!-- Read-only when value exists and not editing -->
-                                                <div v-if="batch.bd_number && !isEditing('bd', batch.key)" class="field-display">
-                                                    <span class="field-value cell-mono">{{ batch.bd_number }}</span>
-                                                    <span v-if="batch.bdStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines in this batch are missing a BD number"></span>
-                                                    <span v-if="batch.bdStatus === 'conflict'" class="status-dot status-dot--error" title="Lines in this batch have different BD numbers"></span>
-                                                    <button type="button" class="btn-edit" @click="startEditing('bd', batch.key)" title="Edit BD#">
-                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                                    </button>
-                                                </div>
-                                                <!-- Input when empty or editing -->
-                                                <div v-else class="input-with-btn">
-                                                    <input type="text" class="inline-input" :ref="el => setBdRef(batch.key, el)" :value="batch.bd_number" placeholder="BD#" />
-                                                    <button type="button" class="btn-confirm" @click="handleSetBdNumber(batch.key)" title="Set BD#">
-                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                                    </button>
-                                                    <button v-if="batch.bd_number" type="button" class="btn-cancel" @click="stopEditing('bd', batch.key)" title="Cancel">
-                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                            <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-merged">
-                                                <span>{{ batch.customization || 'None' }}</span>
-                                                <div v-if="batch.labors.length" class="batch-labors">
-                                                    <span v-for="l in batch.labors" :key="l" class="labor-tag">+ {{ l }}</span>
-                                                </div>
-                                            </td>
-                                            <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-merged">
-                                                <!-- Read-only when value exists and not editing -->
-                                                <div v-if="batch.do_folder && !isEditing('do', batch.key)" class="field-display">
-                                                    <a :href="batch.do_folder" target="_blank" class="field-value link">DO Folder</a>
-                                                    <span v-if="batch.doStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines in this batch are missing a DO link"></span>
-                                                    <span v-if="batch.doStatus === 'conflict'" class="status-dot status-dot--error" title="Lines in this batch have different DO links"></span>
-                                                    <button type="button" class="btn-edit" @click="startEditing('do', batch.key)" title="Edit DO Link">
-                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                                    </button>
-                                                </div>
-                                                <!-- Input when empty or editing -->
-                                                <div v-else class="input-with-btn">
-                                                    <input type="text" class="inline-input inline-input--wide" :ref="el => setDoRef(batch.key, el)" :value="batch.do_folder" placeholder="DO Link" />
-                                                    <button type="button" class="btn-confirm" @click="handleSetDoLink(batch.key)" title="Set DO Link">
-                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                                    </button>
-                                                    <button v-if="batch.do_folder" type="button" class="btn-cancel" @click="stopEditing('do', batch.key)" title="Cancel">
-                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                            <!-- Delivery Location: merged across all batches sharing same delivery -->
-                                            <td v-if="batchIdx === 0 && itemIdx === 0" :rowspan="group.totalItems" class="cell-merged cell-delivery">
-                                                <div class="delivery-detail">
-                                                    <span class="delivery-detail-label">{{ group.deliveryLabel }}</span>
-                                                    <span v-if="group.delivery?.deliverytype" class="delivery-type-tag">{{ group.delivery.deliverytype }}</span>
-                                                </div>
-                                                <div v-if="group.delivery?.address" class="delivery-detail-line">{{ group.delivery.address }}</div>
-                                                <div v-if="group.delivery?.deadline" class="delivery-detail-line delivery-detail-deadline">{{ formatDate(group.delivery.deadline) }}</div>
-                                                <div v-if="group.delivery?.pic_name" class="delivery-detail-line">{{ group.delivery.pic_name }}<span v-if="group.delivery?.pic_phone"> · {{ group.delivery.pic_phone }}</span></div>
-                                                <div v-if="group.delivery?.remarks" class="delivery-detail-remarks">{{ group.delivery.remarks }}</div>
-                                            </td>
-                                        </tr>
-                                    </template>
-                                </template>
-                            </tbody>
-                        </table>
+
+                    <!-- Pipeline cards — one per delivery location -->
+                    <div v-for="group in pipelineDeliveryGroups" :key="group.deliveries_headerid" class="pipe-card">
+                        <!-- Delivery header -->
+                        <div class="pipe-card-header">
+                            <div class="pipe-card-header-main">
+                                <span class="pipe-card-title">{{ group.deliveryLabel }}</span>
+                                <span v-if="group.delivery?.deliverytype" class="pipe-dtype-tag">{{ group.delivery.deliverytype }}</span>
+                            </div>
+                            <div v-if="group.delivery?.address" class="pipe-card-meta">{{ group.delivery.address }}</div>
+                            <div class="pipe-card-meta-row">
+                                <span v-if="group.delivery?.deadline" class="pipe-card-deadline">{{ formatDate(group.delivery.deadline) }}</span>
+                                <span v-if="group.delivery?.pic_name" class="pipe-card-contact">{{ group.delivery.pic_name }}<span v-if="group.delivery?.pic_phone"> · {{ group.delivery.pic_phone }}</span></span>
+                            </div>
+                            <div v-if="group.delivery?.remarks" class="pipe-card-remarks">{{ group.delivery.remarks }}</div>
+                        </div>
+
+                        <!-- Batches inside this delivery -->
+                        <div v-for="batch in group.batches" :key="batch.key" class="pipe-batch">
+                            <div class="pipe-batch-bar">
+                                <div class="pipe-batch-field">
+                                    <span class="pipe-batch-label">BD#</span>
+                                    <div v-if="batch.bd_number && !isEditing('bd', batch.key)" class="field-display">
+                                        <span class="field-value cell-mono">{{ batch.bd_number }}</span>
+                                        <span v-if="batch.bdStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines missing BD#"></span>
+                                        <span v-if="batch.bdStatus === 'conflict'" class="status-dot status-dot--error" title="Conflicting BD numbers"></span>
+                                        <button type="button" class="btn-edit" @click="startEditing('bd', batch.key)" title="Edit BD#">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                        </button>
+                                    </div>
+                                    <div v-else class="input-with-btn">
+                                        <input type="text" class="inline-input" :ref="el => setBdRef(batch.key, el)" :value="batch.bd_number" placeholder="Enter BD#" />
+                                        <button type="button" class="btn-confirm" @click="handleSetBdNumber(batch.key)" title="Save">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                        </button>
+                                        <button v-if="batch.bd_number" type="button" class="btn-cancel" @click="stopEditing('bd', batch.key)" title="Cancel">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="pipe-batch-field">
+                                    <span class="pipe-batch-label">Customization</span>
+                                    <span class="pipe-batch-val">{{ batch.customization || 'None' }}</span>
+                                    <span v-for="l in batch.labors" :key="l" class="labor-tag">{{ l }}</span>
+                                </div>
+                                <div class="pipe-batch-field">
+                                    <span class="pipe-batch-label">DO Folder</span>
+                                    <div v-if="batch.do_folder && !isEditing('do', batch.key)" class="field-display">
+                                        <a :href="batch.do_folder" target="_blank" class="field-value link">Open Link</a>
+                                        <span v-if="batch.doStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines missing DO link"></span>
+                                        <span v-if="batch.doStatus === 'conflict'" class="status-dot status-dot--error" title="Conflicting DO links"></span>
+                                        <button type="button" class="btn-edit" @click="startEditing('do', batch.key)" title="Edit DO Link">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                        </button>
+                                    </div>
+                                    <div v-else class="input-with-btn">
+                                        <input type="text" class="inline-input inline-input--wide" :ref="el => setDoRef(batch.key, el)" :value="batch.do_folder" placeholder="Paste link" />
+                                        <button type="button" class="btn-confirm" @click="handleSetDoLink(batch.key)" title="Save">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                        </button>
+                                        <button v-if="batch.do_folder" type="button" class="btn-cancel" @click="stopEditing('do', batch.key)" title="Cancel">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Items table -->
+                            <table class="pipe-items-table">
+                                <thead>
+                                    <tr>
+                                        <th class="pit-img"></th>
+                                        <th>Model</th>
+                                        <th>Color</th>
+                                        <th class="col-right">Qty</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="item in batch.items" :key="item.lineId">
+                                        <td class="cell-img"><img v-if="item.imagelink" :src="item.imagelink" class="thumb" /><span v-else class="thumb-empty">-</span></td>
+                                        <td>{{ item.model }}</td>
+                                        <td>{{ item.color }}</td>
+                                        <td class="col-right cell-mono">{{ item.qtyDisplay }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
             </div>
@@ -731,58 +731,50 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 /* ═══ LINK ═══ */
 .link { color: $blue; font-size: 11px; text-decoration: none; &:hover { text-decoration: underline; } }
 
-/* ═══ TABLE SCROLL ═══ */
-.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.pipeline-table { min-width: 700px; }
-
-/* ═══ PIPELINE TABLE ═══ */
-.pipeline-table {
-    border-collapse: collapse;
-    border: 1px solid $gray-200;
-    border-radius: 6px;
-    overflow: hidden;
+/* ═══ PIPELINE CARDS ═══ */
+.pipe-card {
+    border: 1px solid $gray-200; border-radius: 8px; overflow: hidden;
+    margin-bottom: 12px; background: $white;
 }
-.pipeline-table thead th {
-    background: #1e293b; color: rgba(255,255,255,0.85); font-size: 10px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 12px;
-    border-bottom: none; border-right: 1px solid rgba(255,255,255,0.08);
+.pipe-card-header {
+    background: #1e293b; color: $white; padding: 12px 16px;
 }
-.pipeline-table thead th:last-child { border-right: none; }
-.pipeline-table td {
-    border-bottom: 1px solid $gray-100;
-    border-right: 1px solid $gray-200;
-    padding: 10px 12px;
+.pipe-card-header-main { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.pipe-card-title { font-size: 13px; font-weight: 700; }
+.pipe-dtype-tag {
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    background: rgba(255,255,255,0.12); padding: 2px 7px; border-radius: 3px; color: rgba(255,255,255,0.7);
 }
-.pipeline-table td:last-child { border-right: none; }
-.pipeline-table tbody tr:hover td { background: #f8fafc; }
+.pipe-card-meta { font-size: 11px; color: rgba(255,255,255,0.6); line-height: 1.4; }
+.pipe-card-meta-row { display: flex; align-items: center; gap: 12px; margin-top: 2px; }
+.pipe-card-deadline { font-size: 11px; font-weight: 600; color: #fbbf24; }
+.pipe-card-contact { font-size: 11px; color: rgba(255,255,255,0.5); }
+.pipe-card-remarks { font-size: 10px; color: rgba(255,255,255,0.35); font-style: italic; margin-top: 4px; }
 
-/* Batch separator — subtle top line on first row of each batch */
-.batch-first-row td { border-top: 2px solid $gray-300; }
-.pipeline-table tbody > template:first-child .batch-first-row td,
-.pipeline-table tbody tr:first-child td { border-top: none; }
-
-/* Merged cells (BD#, Customization, Documentation) */
-.cell-merged {
-    vertical-align: middle;
-    background: $gray-50;
-    border-right: 1px solid $gray-200;
+/* Batch inside a card */
+.pipe-batch { border-top: 1px solid $gray-200; }
+.pipe-batch:first-child { border-top: none; }
+.pipe-batch-bar {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 10px 16px; background: $gray-50; border-bottom: 1px solid $gray-100;
 }
-
-/* Delivery column — distinct background for the merged delivery cell */
-.cell-delivery {
-    min-width: 180px;
-    background: #f8fafc;
-    border-left: 2px solid $gray-300;
-    padding: 12px 14px;
+.pipe-batch-field { display: flex; align-items: center; gap: 6px; }
+.pipe-batch-label {
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: $gray-400; white-space: nowrap;
 }
-.batch-labors { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+.pipe-batch-val { font-size: 12px; color: $gray-700; font-weight: 500; }
 
-/* ═══ DELIVERY DETAIL (Pipeline) ═══ */
-.delivery-detail { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
-.delivery-detail-label { font-weight: 700; font-size: 12px; color: $gray-900; }
-.delivery-detail-line { font-size: 11px; color: $gray-600; line-height: 1.5; }
-.delivery-detail-deadline { font-weight: 600; color: #d97706; }
-.delivery-detail-remarks { font-size: 10px; color: $gray-400; font-style: italic; margin-top: 4px; }
+/* Items table inside batch */
+.pipe-items-table {
+    width: 100%; border-collapse: collapse;
+    th { padding: 6px 16px; font-size: 9px; font-weight: 700; color: $gray-400; text-transform: uppercase; letter-spacing: 0.04em; text-align: left; border-bottom: 1px solid $gray-100; background: $white; }
+    td { padding: 8px 16px; font-size: 12px; border-bottom: 1px solid $gray-50; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafc; }
+}
+.pit-img { width: 44px; }
+.batch-labors { display: flex; flex-wrap: wrap; gap: 3px; }
 
 /* ═══ RESPONSIVE ═══ */
 @media (max-width: 700px) {
