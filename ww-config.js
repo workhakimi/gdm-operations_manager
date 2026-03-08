@@ -28,6 +28,18 @@ export default {
                 isCollapsible: true,
                 properties: ['inventoryData', 'teammatesList'],
             },
+            {
+                label: 'Colors',
+                isCollapsible: true,
+                properties: [
+                    'colorHeaderBarBg',
+                    'colorCardHeaderBg',
+                    'colorCardHeaderText',
+                    'colorBatchSeparator',
+                    'colorTableHeaderBg',
+                    'colorConfirmBtnBg',
+                ],
+            },
         ],
     },
     triggerEvents: [
@@ -197,6 +209,48 @@ export default {
                 tooltip: 'Array of teammates: { id, name, type, email, phone }',
             },
             /* wwEditor:end */
+        },
+        colorHeaderBarBg: {
+            label: { en: 'Header Bar Background' },
+            type: 'Color',
+            section: 'settings',
+            bindable: true,
+            defaultValue: '#1e293b',
+        },
+        colorCardHeaderBg: {
+            label: { en: 'Card Header Background' },
+            type: 'Color',
+            section: 'settings',
+            bindable: true,
+            defaultValue: '#f1f5f9',
+        },
+        colorCardHeaderText: {
+            label: { en: 'Card Header Text' },
+            type: 'Color',
+            section: 'settings',
+            bindable: true,
+            defaultValue: '#111827',
+        },
+        colorBatchSeparator: {
+            label: { en: 'Batch Separator Color' },
+            type: 'Color',
+            section: 'settings',
+            bindable: true,
+            defaultValue: '#e5e7eb',
+        },
+        colorTableHeaderBg: {
+            label: { en: 'Table Header Background' },
+            type: 'Color',
+            section: 'settings',
+            bindable: true,
+            defaultValue: '#f9fafb',
+        },
+        colorConfirmBtnBg: {
+            label: { en: 'Confirm Button Background' },
+            type: 'Color',
+            section: 'settings',
+            bindable: true,
+            defaultValue: '#1e293b',
         },
     },
 };

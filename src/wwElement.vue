@@ -1,5 +1,5 @@
 <template>
-    <div class="ops-manager">
+    <div class="ops-manager" :style="{ '--c-batch-sep': content.colorBatchSeparator, '--c-th-bg': content.colorTableHeaderBg, '--c-confirm-bg': content.colorConfirmBtnBg }">
         <!-- ═══ EMPTY STATE ═══ -->
         <div v-if="!currentHeader" class="empty-state">
             <p class="empty-text">Select an order plan to view operations.</p>
@@ -14,7 +14,7 @@
             </div>
 
             <!-- Header Bar -->
-            <div class="header-bar">
+            <div class="header-bar" :style="{ background: content.colorHeaderBarBg }">
                 <span class="opid-badge">{{ currentHeader.opid }}</span>
                 <span class="header-title">{{ currentHeader.title }}</span>
                 <span class="header-status" :class="'status--' + (currentHeader.status || '').toLowerCase()">{{ currentHeader.status || 'Draft' }}</span>
@@ -176,7 +176,7 @@
                     <!-- Pipeline cards — one per delivery location -->
                     <div v-for="group in pipelineDeliveryGroups" :key="group.deliveries_headerid" class="pipe-card">
                         <!-- Delivery header -->
-                        <div class="pipe-card-header">
+                        <div class="pipe-card-header" :style="{ background: content.colorCardHeaderBg, color: content.colorCardHeaderText }">
                             <div class="pipe-card-header-main">
                                 <span class="pipe-card-title">{{ group.deliveryLabel }}</span>
                                 <span v-if="group.delivery?.deliverytype" class="pipe-dtype-tag">{{ group.delivery.deliverytype }}</span>
@@ -596,9 +596,9 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 
 /* ═══ HEADER BAR ═══ */
 .header-bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #1e293b; color: $white; }
-.opid-badge { font-size: 11px; font-weight: 700; background: rgba(255,255,255,0.12); padding: 3px 8px; border-radius: 4px; font-family: 'SF Mono', 'Fira Code', monospace; }
+.opid-badge { font-size: 11px; font-weight: 700; background: rgba(255,255,255,0.12); padding: 3px 8px; font-family: 'SF Mono', 'Fira Code', monospace; }
 .header-title { font-size: 14px; font-weight: 600; flex: 1; }
-.header-status { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+.header-status { font-size: 10px; font-weight: 700; padding: 3px 8px; text-transform: uppercase; letter-spacing: 0.04em; }
 .status--draft { background: $gray-100; color: $gray-600; }
 .status--submitted { background: $blue-50; color: $blue; }
 
@@ -609,13 +609,13 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 /* ═══ SECTIONS ═══ */
 .section { padding: 16px; }
 .section-heading { font-size: 11px; font-weight: 700; color: $gray-500; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px 0; display: flex; align-items: center; gap: 6px; }
-.count-badge { font-size: 10px; font-weight: 700; background: $gray-200; color: $gray-600; padding: 1px 6px; border-radius: 8px; }
-.empty-section { padding: 24px; text-align: center; color: $gray-500; font-size: 12px; border: 1px dashed $gray-300; border-radius: 6px; background: $white; }
+.count-badge { font-size: 10px; font-weight: 700; background: $gray-200; color: $gray-600; padding: 1px 6px; }
+.empty-section { padding: 24px; text-align: center; color: $gray-500; font-size: 12px; border: 1px dashed $gray-300; background: $white; }
 .empty-section--sm { padding: 12px; font-size: 11px; margin-top: 8px; }
 
 /* ═══ META TABLE ═══ */
 .meta-table {
-    width: 100%; border-collapse: collapse; background: $white; border: 1px solid $gray-200; border-radius: 6px; overflow: hidden;
+    width: 100%; border-collapse: collapse; background: $white; border: 1px solid $gray-200; overflow: hidden;
     td { padding: 8px 12px; border-bottom: 1px solid $gray-100; font-size: 12px; vertical-align: top; }
     tr:last-child td { border-bottom: none; }
 }
@@ -623,7 +623,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 
 /* ═══ DATA TABLE ═══ */
 .data-table {
-    width: 100%; border-collapse: collapse; background: $white; border: 1px solid $gray-200; border-radius: 6px; overflow: hidden;
+    width: 100%; border-collapse: collapse; background: $white; border: 1px solid $gray-200; overflow: hidden;
     th { padding: 8px 10px; font-size: 10px; font-weight: 700; color: $gray-400; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid $gray-200; text-align: left; background: $gray-50; }
     td { padding: 8px 10px; font-size: 12px; border-bottom: 1px solid $gray-50; vertical-align: middle; }
     tr:last-child td { border-bottom: none; }
@@ -634,18 +634,18 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .cell-muted { color: $gray-400; }
 .cell-neg { color: $red; font-weight: 700; }
 .cell-img { width: 40px; padding: 4px 8px; }
-.thumb { width: 36px; height: 36px; border-radius: 4px; object-fit: cover; display: block; }
+.thumb { width: 36px; height: 36px; object-fit: cover; display: block; }
 .thumb-empty { color: $gray-400; }
 
 /* ═══ STATUS ═══ */
-.status-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+.status-pill { display: inline-block; padding: 2px 8px; font-size: 10px; font-weight: 600; }
 .pill--booked { background: $blue-50; color: $blue; }
 .pill--issue-raised { background: $red-50; color: $red; }
 .pill--processing { background: $amber-50; color: $amber; }
 .pill--delivered { background: $green-50; color: $green; }
 
 .status-select {
-    appearance: none; -webkit-appearance: none; padding: 3px 18px 3px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; font-family: $font; border: 1px solid transparent; cursor: pointer; outline: none;
+    appearance: none; -webkit-appearance: none; padding: 3px 18px 3px 8px; font-size: 10px; font-weight: 600; font-family: $font; border: 1px solid transparent; cursor: pointer; outline: none;
     background-repeat: no-repeat; background-position: right 5px center; background-size: 10px;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
 }
@@ -666,7 +666,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 /* ═══ DELIVERY BLOCK ═══ */
 .delivery-block { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid $gray-200; &:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; } }
 .delivery-title { font-size: 13px; font-weight: 700; color: $gray-900; margin: 0 0 8px 0; }
-.delivery-type-tag { font-size: 10px; font-weight: 600; color: $gray-500; background: $gray-100; padding: 2px 6px; border-radius: 4px; margin-left: 4px; }
+.delivery-type-tag { font-size: 10px; font-weight: 600; color: $gray-500; background: $gray-100; padding: 2px 6px; margin-left: 4px; }
 .delivery-lines { margin-top: 10px; }
 
 /* ═══ BOOKING DETAIL ═══ */
@@ -676,7 +676,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 /* ═══ INLINE INPUT + CONFIRM BUTTON ═══ */
 .input-with-btn { display: flex; align-items: center; gap: 3px; }
 .inline-input {
-    width: 72px; height: 26px; padding: 0 6px; border: 1px solid $gray-200; border-radius: 4px;
+    width: 72px; height: 26px; padding: 0 6px; border: 1px solid $gray-200;
     font-size: 11px; font-family: $font; color: $gray-900; background: $white; outline: none;
     transition: border-color 0.15s ease;
     &::placeholder { color: $gray-400; }
@@ -689,22 +689,22 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .field-value { font-size: 11px; color: $gray-900; }
 .btn-edit {
     flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-    width: 22px; height: 22px; padding: 0; border: none; border-radius: 4px;
+    width: 22px; height: 22px; padding: 0; border: none;
     background: transparent; color: $gray-400; cursor: pointer; transition: all 0.15s ease;
     svg { width: 12px; height: 12px; }
     &:hover { background: $blue-50; color: $blue; }
 }
 .btn-cancel {
     flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-    width: 24px; height: 24px; padding: 0; border: none; border-radius: 4px;
+    width: 24px; height: 24px; padding: 0; border: none;
     background: $gray-100; color: $gray-500; cursor: pointer; transition: all 0.15s ease;
     svg { width: 12px; height: 12px; }
     &:hover { background: $red-50; color: $red; }
 }
 .btn-confirm {
     flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-    width: 24px; height: 24px; padding: 0; border: none; border-radius: 4px;
-    background: #1e293b; color: $white; cursor: pointer; transition: background 0.15s ease;
+    width: 24px; height: 24px; padding: 0; border: none;
+    background: var(--c-confirm-bg, #1e293b); color: $white; cursor: pointer; transition: background 0.15s ease;
     svg { width: 12px; height: 12px; }
     &:hover { background: #334155; }
 }
@@ -717,27 +717,27 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .status-dot--error { background: $red; }
 
 /* ═══ SPLIT TAG ═══ */
-.split-tag { display: inline-block; font-size: 10px; font-weight: 600; color: #7c3aed; background: #f5f3ff; padding: 1px 5px; border-radius: 4px; }
+.split-tag { display: inline-block; font-size: 10px; font-weight: 600; color: #7c3aed; background: #f5f3ff; padding: 1px 5px; }
 
 /* ═══ LABOR TAG ═══ */
-.labor-tag { display: inline-block; font-size: 10px; font-weight: 600; color: #0d9488; background: #f0fdfa; padding: 1px 5px; border-radius: 4px; margin-left: 4px; }
+.labor-tag { display: inline-block; font-size: 10px; font-weight: 600; color: #0d9488; background: #f0fdfa; padding: 1px 5px; margin-left: 4px; }
 
 /* ═══ LINK ═══ */
 .link { color: $blue; font-size: 11px; text-decoration: none; &:hover { text-decoration: underline; } }
 
 /* ═══ PIPELINE CARDS ═══ */
 .pipe-card {
-    border: 1px solid $gray-200; border-radius: 8px; overflow: hidden;
+    border: 1px solid $gray-200; overflow: hidden;
     margin-bottom: 12px; background: $white;
 }
 .pipe-card-header {
     background: #f1f5f9; border-bottom: 1px solid $gray-200; padding: 8px 12px;
 }
 .pipe-card-header-main { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
-.pipe-card-title { font-size: 12px; font-weight: 700; color: $gray-900; }
+.pipe-card-title { font-size: 12px; font-weight: 700; color: inherit; }
 .pipe-dtype-tag {
     font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
-    background: $gray-200; padding: 2px 7px; border-radius: 3px; color: $gray-600;
+    background: $gray-200; padding: 2px 7px; color: $gray-600;
 }
 .pipe-card-meta { font-size: 11px; color: $gray-500; line-height: 1.4; }
 .pipe-card-meta-row { display: flex; align-items: center; gap: 12px; margin-top: 2px; }
@@ -751,7 +751,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
     th {
         padding: 5px 8px; font-size: 9px; font-weight: 700; color: $gray-400;
         text-transform: uppercase; letter-spacing: 0.04em; text-align: left;
-        border-bottom: 1px solid $gray-200; background: $gray-50;
+        border-bottom: 1px solid $gray-200; background: var(--c-th-bg, $gray-50);
     }
     td {
         padding: 6px 8px; font-size: 11px; border-bottom: 1px solid $gray-50;
@@ -759,13 +759,13 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
     }
     tr:last-child td { border-bottom: none; }
 }
-.batch-first td { border-top: 2px solid $gray-200; }
+.batch-first td { border-top: 2px solid var(--c-batch-sep, $gray-200); }
 .pipe-table tbody tr:first-child td { border-top: none; }
 .cell-batch {
     vertical-align: middle; background: $gray-50;
     border-left: 1px solid $gray-200;
 }
-.thumb-sm { width: 28px; height: 28px; border-radius: 3px; object-fit: cover; display: block; }
+.thumb-sm { width: 28px; height: 28px; object-fit: cover; display: block; }
 
 /* ═══ RESPONSIVE ═══ */
 @media (max-width: 700px) {
