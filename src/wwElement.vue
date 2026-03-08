@@ -65,7 +65,6 @@
                 </table>
                 <!-- Booking Items Detail (per attached booking) -->
                 <div v-for="booking in attachedBookings" :key="'detail-' + booking.id" class="booking-detail-block">
-                    <h4 class="booking-detail-title">{{ booking.bookingnumber }} — {{ booking.bookingtitle }}</h4>
                     <table class="data-table">
                         <thead>
                             <tr>
@@ -133,6 +132,7 @@
                                         <th>Model</th>
                                         <th>Color</th>
                                         <th class="col-right">Qty</th>
+                                        <th>Split</th>
                                         <th>Customization</th>
                                         <th>Labor</th>
                                         <th>Status</th>
@@ -145,6 +145,7 @@
                                         <td>{{ line._inv?.model || 'Unknown' }}</td>
                                         <td>{{ line._inv?.color || '-' }}</td>
                                         <td class="col-right cell-mono">{{ line.quantity_assigned }}/{{ line._bookingItem?.quantity || '?' }}</td>
+                                        <td><span v-if="line.splitgroupid" class="split-tag">Split</span><span v-else class="cell-muted">-</span></td>
                                         <td>{{ line.customization || 'None' }}</td>
                                         <td>{{ laborDisplay(line.labor) || 'None' }}</td>
                                         <td>
@@ -597,6 +598,9 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
     svg { width: 14px; height: 14px; }
     &:hover { background: $blue-dark; }
 }
+
+/* ═══ SPLIT TAG ═══ */
+.split-tag { display: inline-block; font-size: 10px; font-weight: 600; color: #7c3aed; background: #f5f3ff; padding: 1px 5px; border-radius: 4px; }
 
 /* ═══ LABOR TAG ═══ */
 .labor-tag { display: inline-block; font-size: 10px; font-weight: 600; color: #0d9488; background: #f0fdfa; padding: 1px 5px; border-radius: 4px; margin-left: 4px; }
