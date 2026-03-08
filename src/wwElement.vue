@@ -69,12 +69,12 @@
                     </div>
                     <table class="pipe-table">
                         <colgroup>
-                            <col style="width:36px" />
-                            <col style="width:130px" />
-                            <col />
-                            <col style="width:120px" />
-                            <col style="width:60px" />
+                            <col style="width:32px" />
                             <col style="width:110px" />
+                            <col style="width:20%" />
+                            <col style="width:80px" />
+                            <col style="width:60px" />
+                            <col style="width:90px" />
                             <col style="width:80px" />
                         </colgroup>
                         <thead>
@@ -157,7 +157,7 @@
                             <div v-if="linesForDelivery(del.id).length > 0">
                                 <table class="pipe-table">
                                     <colgroup>
-                                        <col style="width:36px" /><col style="width:120px" /><col /><col style="width:90px" /><col style="width:55px" /><col style="width:45px" /><col style="width:100px" /><col style="width:80px" /><col style="width:90px" /><col style="width:55px" />
+                                        <col style="width:32px" /><col style="width:110px" /><col style="width:14%" /><col style="width:70px" /><col style="width:55px" /><col style="width:45px" /><col style="width:110px" /><col style="width:80px" /><col style="width:85px" /><col style="width:60px" />
                                     </colgroup>
                                     <thead><tr><th></th><th>SKU</th><th>Model</th><th>Color</th><th class="col-right">Qty</th><th>Split</th><th>Customization</th><th>Labor</th><th>Status</th><th>Mockup</th></tr></thead>
                                     <tbody>
@@ -202,13 +202,13 @@
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                                     </button>
                                 </div>
-                                <div class="edit-row">
-                                    <input type="datetime-local" class="edit-input edit-input--date" v-model="fd.deadline" />
-                                    <input type="text" class="edit-input" v-model="fd.pic_name" placeholder="Contact name" style="flex:1" />
-                                    <input type="text" class="edit-input" v-model="fd.pic_phone" placeholder="Phone" style="width:120px" />
+                                <div class="edit-grid-3">
+                                    <input type="datetime-local" class="edit-input" v-model="fd.deadline" />
+                                    <input type="text" class="edit-input" v-model="fd.pic_name" placeholder="Contact name" />
+                                    <input type="text" class="edit-input" v-model="fd.pic_phone" placeholder="Phone" />
                                 </div>
                                 <textarea class="edit-textarea" v-model="fd.address" placeholder="Delivery address" rows="2"></textarea>
-                                <input type="text" class="edit-input" v-model="fd.remarks" placeholder="Remarks (optional)" style="margin-top:4px" />
+                                <input type="text" class="edit-input" v-model="fd.remarks" placeholder="Remarks (optional)" style="width:100%;margin-top:4px" />
                             </div>
                         </div>
                     </template>
@@ -258,7 +258,7 @@
                             <!-- Allocation rows -->
                             <table class="pipe-table alloc-table">
                                 <colgroup>
-                                    <col style="width:70px" /><col /><col style="width:130px" /><col style="width:110px" /><col style="width:80px" /><col style="width:80px" />
+                                    <col style="width:60px" /><col style="width:28%" /><col style="width:22%" /><col style="width:18%" /><col /><col style="width:60px" />
                                 </colgroup>
                                 <thead><tr><th>Qty</th><th>Destination</th><th>Customization</th><th>Labor</th><th>Mockup</th><th>Action</th></tr></thead>
                                 <tbody>
@@ -322,7 +322,7 @@
 
                         <table class="pipe-table">
                             <colgroup>
-                                <col style="width:36px" /><col /><col style="width:100px" /><col style="width:70px" /><col style="width:120px" /><col /><col style="width:140px" />
+                                <col style="width:32px" /><col style="width:18%" /><col style="width:80px" /><col style="width:60px" /><col style="width:110px" /><col /><col style="width:130px" />
                             </colgroup>
                             <thead><tr><th></th><th>Model</th><th>Color</th><th class="col-right">Qty</th><th>BD#</th><th>Customization</th><th>DO Folder</th></tr></thead>
                             <tbody>
@@ -943,6 +943,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 }
 .edit-select--sm { width: auto; }
 .edit-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.edit-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 6px; }
 .edit-textarea {
     width: 100%; padding: 4px 8px; border: 1px solid $gray-300; font-size: 11px; font-family: $font;
     color: $gray-900; background: $white; outline: none; resize: vertical; margin-top: 6px;
