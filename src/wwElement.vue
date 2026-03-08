@@ -20,28 +20,16 @@
                 <span class="header-status" :class="'status--' + (currentHeader.status || '').toLowerCase()">{{ currentHeader.status || 'Draft' }}</span>
             </div>
 
-            <!-- Section: Order Metadata -->
+            <!-- Section: Order Metadata (always read-only) -->
             <section class="section">
                 <h3 class="section-heading">Order Metadata</h3>
                 <table class="meta-table">
                     <tbody>
-                        <tr><td class="meta-label">Title</td><td><input v-if="opEditMode" type="text" class="meta-input" v-model="form.title" placeholder="Order title" /><span v-else>{{ currentHeader.title || '-' }}</span></td></tr>
-                        <tr><td class="meta-label">Quote Ref</td><td><input v-if="opEditMode" type="text" class="meta-input" v-model="form.quoteref" placeholder="Q-202X-XXX" /><span v-else>{{ currentHeader.quoteref || '-' }}</span></td></tr>
-                        <tr><td class="meta-label">Invoice Ref</td><td><input v-if="opEditMode" type="text" class="meta-input" v-model="form.invoiceref" placeholder="INV-202X-XXX" /><span v-else>{{ currentHeader.invoiceref || '-' }}</span></td></tr>
-                        <tr><td class="meta-label">PIC (BDA)</td><td>
-                            <select v-if="opEditMode" class="meta-select" v-model="form.pic_bda">
-                                <option value="">Not assigned</option>
-                                <option v-for="t in resolvedTeammates" :key="t.id" :value="t.id">{{ t.name }}</option>
-                            </select>
-                            <span v-else>{{ getTeammateName(currentHeader.pic_bda) || 'Not assigned' }}</span>
-                        </td></tr>
-                        <tr><td class="meta-label">PIC (OPS)</td><td>
-                            <select v-if="opEditMode" class="meta-select" v-model="form.pic_ops">
-                                <option value="">Not assigned</option>
-                                <option v-for="t in resolvedTeammates" :key="t.id" :value="t.id">{{ t.name }}</option>
-                            </select>
-                            <span v-else>{{ getTeammateName(currentHeader.pic_ops) || 'Not assigned' }}</span>
-                        </td></tr>
+                        <tr><td class="meta-label">Title</td><td>{{ currentHeader.title || '-' }}</td></tr>
+                        <tr><td class="meta-label">Quote Ref</td><td>{{ currentHeader.quoteref || '-' }}</td></tr>
+                        <tr><td class="meta-label">Invoice Ref</td><td>{{ currentHeader.invoiceref || '-' }}</td></tr>
+                        <tr><td class="meta-label">PIC (BDA)</td><td>{{ getTeammateName(currentHeader.pic_bda) || 'Not assigned' }}</td></tr>
+                        <tr><td class="meta-label">PIC (OPS)</td><td>{{ getTeammateName(currentHeader.pic_ops) || 'Not assigned' }}</td></tr>
                         <tr><td class="meta-label">Status</td><td>{{ currentHeader.status || 'Draft' }}</td></tr>
                         <tr><td class="meta-label">Created</td><td>{{ formatDate(currentHeader.created_at) }}</td></tr>
                         <tr v-if="currentHeader.submitted_at"><td class="meta-label">Submitted</td><td>{{ formatDate(currentHeader.submitted_at) }}</td></tr>
@@ -113,7 +101,7 @@
             <!-- Toggle Bar -->
             <div class="toggle-bar">
                 <button type="button" class="toggle-btn" :class="{ 'toggle-btn--active': activeView === 'orderplan' }" @click="activeView = 'orderplan'">Order Plan View</button>
-                <button type="button" class="toggle-btn" :class="{ 'toggle-btn--active': activeView === 'pipeline' }" @click="activeView = 'pipeline'">Pipeline Manager</button>
+                <button type="button" class="toggle-btn" :class="{ 'toggle-btn--active': activeView === 'pipeline' }" @click="activeView = 'pipeline'; cancelEditMode()">Pipeline Manager</button>
             </div>
 
             <!-- ═══ ORDER PLAN VIEW (INTERACTIVE EDITOR) ═══ -->
@@ -130,6 +118,30 @@
                         <button type="button" class="btn-action btn-action--danger" @click="handleDeleteOrderPlan">Delete</button>
                     </template>
                 </div>
+
+                <!-- Editable Metadata (shown in edit mode) -->
+                <section v-if="opEditMode" class="section">
+                    <h3 class="section-heading">Edit Metadata</h3>
+                    <table class="meta-table">
+                        <tbody>
+                            <tr><td class="meta-label">Title</td><td><input type="text" class="meta-input" v-model="form.title" placeholder="Order title" /></td></tr>
+                            <tr><td class="meta-label">Quote Ref</td><td><input type="text" class="meta-input" v-model="form.quoteref" placeholder="Q-202X-XXX" /></td></tr>
+                            <tr><td class="meta-label">Invoice Ref</td><td><input type="text" class="meta-input" v-model="form.invoiceref" placeholder="INV-202X-XXX" /></td></tr>
+                            <tr><td class="meta-label">PIC (BDA)</td><td>
+                                <select class="meta-select" v-model="form.pic_bda">
+                                    <option value="">Not assigned</option>
+                                    <option v-for="t in resolvedTeammates" :key="t.id" :value="t.id">{{ t.name }}</option>
+                                </select>
+                            </td></tr>
+                            <tr><td class="meta-label">PIC (OPS)</td><td>
+                                <select class="meta-select" v-model="form.pic_ops">
+                                    <option value="">Not assigned</option>
+                                    <option v-for="t in resolvedTeammates" :key="t.id" :value="t.id">{{ t.name }}</option>
+                                </select>
+                            </td></tr>
+                        </tbody>
+                    </table>
+                </section>
 
                 <!-- Delivery Cards -->
                 <section class="section">
@@ -149,7 +161,7 @@
                                 </div>
                                 <div v-if="del.address" class="pipe-card-meta">{{ del.address }}</div>
                                 <div class="pipe-card-meta-row">
-                                    <span v-if="del.deadline" class="pipe-card-deadline">{{ formatDate(del.deadline) }}</span>
+                                    <span v-if="del.deadline" class="pipe-card-deadline">Delivery by: {{ formatDate(del.deadline) }}</span>
                                     <span v-if="del.pic_name" class="pipe-card-contact">{{ del.pic_name }}<span v-if="del.pic_phone"> · {{ del.pic_phone }}</span></span>
                                 </div>
                                 <div v-if="del.remarks" class="pipe-card-remarks">{{ del.remarks }}</div>
@@ -311,11 +323,10 @@
                             <div class="pipe-card-header-main">
                                 <span class="pipe-card-title">{{ group.deliveryLabel }}</span>
                                 <span v-if="group.delivery?.deliverytype" class="pipe-dtype-tag">{{ group.delivery.deliverytype }}</span>
-                                <button type="button" class="btn-export" @click="openExportOverlay(group)">Export Order Items</button>
                             </div>
                             <div v-if="group.delivery?.address" class="pipe-card-meta">{{ group.delivery.address }}</div>
                             <div class="pipe-card-meta-row">
-                                <span v-if="group.delivery?.deadline" class="pipe-card-deadline">{{ formatDate(group.delivery.deadline) }}</span>
+                                <span v-if="group.delivery?.deadline" class="pipe-card-deadline">Delivery by: {{ formatDate(group.delivery.deadline) }}</span>
                                 <span v-if="group.delivery?.pic_name" class="pipe-card-contact">{{ group.delivery.pic_name }}<span v-if="group.delivery?.pic_phone"> · {{ group.delivery.pic_phone }}</span></span>
                             </div>
                             <div v-if="group.delivery?.remarks" class="pipe-card-remarks">{{ group.delivery.remarks }}</div>
@@ -323,7 +334,7 @@
 
                         <table class="pipe-table">
                             <colgroup>
-                                <col style="width:32px" /><col style="width:110px" /><col style="width:12%" /><col style="width:70px" /><col style="width:65px" /><col style="width:100px" /><col /><col style="width:120px" />
+                                <col style="width:32px" /><col style="width:110px" /><col style="width:12%" /><col style="width:100px" /><col style="width:85px" /><col style="width:100px" /><col style="width:80px" /><col style="width:120px" />
                             </colgroup>
                             <thead><tr><th></th><th>SKU</th><th>Model</th><th>Color</th><th class="col-right">Qty</th><th>BD#</th><th>Customization</th><th>DO Folder</th></tr></thead>
                             <tbody>
@@ -340,11 +351,13 @@
                                                 <span v-if="batch.bdStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines missing BD#"></span>
                                                 <span v-if="batch.bdStatus === 'conflict'" class="status-dot status-dot--error" title="Conflicting BD numbers"></span>
                                                 <button type="button" class="btn-edit" @click="startEditing('bd', batch.key)" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                                                <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
                                             </div>
                                             <div v-else class="input-with-btn">
                                                 <input type="text" class="inline-input" :ref="el => setBdRef(batch.key, el)" :value="batch.bd_number" placeholder="BD#" />
                                                 <button type="button" class="btn-confirm" @click="handleSetBdNumber(batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
                                                 <button v-if="batch.bd_number" type="button" class="btn-cancel" @click="stopEditing('bd', batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                                                <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
                                             </div>
                                         </td>
                                         <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-batch">
@@ -377,7 +390,7 @@
         <div v-if="exportOverlay" class="export-overlay" @click.self="exportOverlay = null">
             <div class="export-modal">
                 <div class="export-modal-header">
-                    <span class="export-modal-title">Export Order Items</span>
+                    <span class="export-modal-title">{{ exportOverlay.title }}</span>
                     <button type="button" class="btn-icon" @click="exportOverlay = null">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
@@ -814,14 +827,12 @@ export default {
         const exportOverlay = ref(null);
         const exportCopied = ref(false);
 
-        function openExportOverlay(group) {
+        function openExportOverlay(batch) {
             const lines = [];
-            for (const batch of group.batches) {
-                for (const item of batch.items) {
-                    lines.push(`${item.sku} x${item.qty}`);
-                }
+            for (const item of batch.items) {
+                lines.push(`${item.sku} x${item.qty}`);
             }
-            exportOverlay.value = { text: lines.join(',\n') };
+            exportOverlay.value = { title: batch.bd_number || 'Order Items', text: lines.join(',\n') };
             exportCopied.value = false;
         }
 
@@ -895,7 +906,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 
 /* ═══ HEADER BAR ═══ */
 .header-bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #1e293b; color: $white; }
-.opid-badge { font-size: 11px; font-weight: 700; background: rgba(255,255,255,0.12); padding: 3px 8px; font-family: 'SF Mono', 'Fira Code', monospace; }
+.opid-badge { font-size: 11px; font-weight: 700; background: rgba(255,255,255,0.12); padding: 3px 8px; font-family: $font; }
 .header-title { font-size: 14px; font-weight: 600; flex: 1; }
 .header-status { font-size: 10px; font-weight: 700; padding: 3px 8px; text-transform: uppercase; letter-spacing: 0.04em; }
 .status--draft { background: $gray-100; color: $gray-600; }
@@ -924,7 +935,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 
 /* ═══ SHARED TABLE HELPERS ═══ */
 .col-right { text-align: right; }
-.cell-mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px; }
+.cell-mono { font-family: $font; font-size: 11px; }
 .cell-muted { color: $gray-400; }
 .cell-neg { color: $red; font-weight: 700; }
 .cell-img { width: 36px; padding: 4px 6px; }
@@ -1027,7 +1038,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 }
 .alloc-sku-block { border-top: 1px solid $gray-200; }
 .alloc-sku-header { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: $gray-50; }
-.alloc-summary { font-size: 12px; font-weight: 700; margin-left: auto; font-family: 'SF Mono', 'Fira Code', monospace; }
+.alloc-summary { font-size: 12px; font-weight: 700; margin-left: auto; font-family: $font; }
 .alloc-summary--full { color: $green; }
 .alloc-summary--over { color: $red; }
 .alloc-summary--partial { color: $gray-400; }
@@ -1054,6 +1065,13 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
     width: 22px; height: 22px; padding: 0; border: none;
     background: transparent; color: $gray-400; cursor: pointer; transition: all 0.15s ease;
     svg { width: 12px; height: 12px; }
+    &:hover { background: $blue-50; color: $blue; }
+}
+.btn-info {
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; padding: 0; border: none;
+    background: transparent; color: $gray-400; cursor: pointer; transition: all 0.15s ease;
+    svg { width: 14px; height: 14px; }
     &:hover { background: $blue-50; color: $blue; }
 }
 .btn-cancel {
@@ -1106,12 +1124,6 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .thumb-sm { width: 28px; height: 28px; object-fit: cover; display: block; }
 
 /* ═══ EXPORT BUTTON ═══ */
-.btn-export {
-    font-size: 10px; font-weight: 600; font-family: $font; color: $gray-500; background: $white;
-    border: 1px solid $gray-300; padding: 2px 8px; cursor: pointer; margin-left: auto;
-    &:hover { background: $gray-50; color: $gray-700; border-color: $gray-400; }
-}
-
 /* ═══ EXPORT OVERLAY ═══ */
 .export-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 100;
@@ -1127,7 +1139,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 }
 .export-modal-title { font-size: 13px; font-weight: 700; color: $gray-900; }
 .export-modal-body {
-    padding: 16px; font-size: 12px; font-family: 'SF Mono', 'Fira Code', monospace;
+    padding: 16px; font-size: 12px; font-family: $font;
     line-height: 1.6; color: $gray-700; white-space: pre-wrap; word-break: break-all;
     overflow-y: auto; flex: 1; margin: 0; background: $gray-50;
 }
