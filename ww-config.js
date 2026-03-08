@@ -96,6 +96,12 @@ export default {
             event: { value: { headerId: null, opid: null } },
             default: false,
         },
+        {
+            name: 'onUnsubmitOrderPlan',
+            label: { en: 'On Unsubmit Order Plan' },
+            event: { value: { headerId: null, opid: null, status: 'Draft' } },
+            default: false,
+        },
     ],
     properties: {
         selectedOrderPlanId: {

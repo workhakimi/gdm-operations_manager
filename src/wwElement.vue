@@ -71,9 +71,9 @@
                                 <th>SKU</th>
                                 <th>Model</th>
                                 <th>Color</th>
-                                <th class="col-right">Qty</th>
+                                <th class="col-left">Qty</th>
                                 <th>Status</th>
-                                <th class="col-right">Bal Ref</th>
+                                <th class="col-left">Bal Ref</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -82,7 +82,7 @@
                                 <td class="cell-mono">{{ item.sku }}</td>
                                 <td>{{ item._inv?.model || 'Unknown' }}</td>
                                 <td>{{ item._inv?.color || '-' }}</td>
-                                <td class="col-right">{{ item.quantity }}</td>
+                                <td class="col-left">{{ item.quantity }}</td>
                                 <td>
                                     <select class="status-select" :class="'ss--' + statusKey(item.status)" :value="item.status || 'Booked'" @change="handleStatusChange(item.id, $event.target.value)">
                                         <option value="Booked">Booked</option>
@@ -91,7 +91,7 @@
                                         <option value="Delivered">Delivered</option>
                                     </select>
                                 </td>
-                                <td class="col-right cell-mono" :class="{ 'cell-neg': (item.balanceref ?? 0) < 0 }">{{ item.balanceref ?? '-' }}</td>
+                                <td class="col-left cell-mono" :class="{ 'cell-neg': (item.balanceref ?? 0) < 0 }">{{ item.balanceref ?? '-' }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -171,14 +171,14 @@
                                     <colgroup>
                                         <col style="width:32px" /><col style="width:110px" /><col style="width:14%" /><col style="width:70px" /><col style="width:55px" /><col style="width:45px" /><col style="width:110px" /><col style="width:80px" /><col style="width:85px" /><col style="width:60px" />
                                     </colgroup>
-                                    <thead><tr><th></th><th>SKU</th><th>Model</th><th>Color</th><th class="col-right">Qty</th><th>Split</th><th>Customization</th><th>Labor</th><th>Status</th><th>Mockup</th></tr></thead>
+                                    <thead><tr><th></th><th>SKU</th><th>Model</th><th>Color</th><th class="col-left">Qty</th><th>Split</th><th>Customization</th><th>Labor</th><th>Status</th><th>Mockup</th></tr></thead>
                                     <tbody>
                                         <tr v-for="line in linesForDelivery(del.id)" :key="line.id">
                                             <td class="cell-img"><img v-if="line._inv?.imagelink" :src="line._inv.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
                                             <td class="cell-mono">{{ line._bookingItem?.sku || '-' }}</td>
                                             <td>{{ line._inv?.model || 'Unknown' }}</td>
                                             <td>{{ line._inv?.color || '-' }}</td>
-                                            <td class="col-right cell-mono">{{ line.quantity_assigned }}/{{ line._bookingItem?.quantity || '?' }}</td>
+                                            <td class="col-left cell-mono">{{ line.quantity_assigned }}/{{ line._bookingItem?.quantity || '?' }}</td>
                                             <td><span v-if="isSplit(line)" class="split-tag">Split</span><span v-else class="cell-muted">-</span></td>
                                             <td>{{ line.customization || 'None' }}</td>
                                             <td>{{ laborDisplay(line.labor) || 'None' }}</td>
@@ -314,6 +314,9 @@
 
             <!-- ═══ PIPELINE MANAGER VIEW ═══ -->
             <div v-if="activeView === 'pipeline'" class="view-content">
+                <div v-if="(currentHeader.status || '').toLowerCase() === 'submitted'" class="edit-bar">
+                    <button type="button" class="btn-action btn-action--muted" @click="handleUnsubmitOrderPlan">Unsubmit to Draft</button>
+                </div>
                 <section class="section">
                     <h3 class="section-heading">Order Pipeline <span class="count-badge">{{ pipelineBatches.length }} batches</span></h3>
                     <div v-if="pipelineBatches.length === 0" class="empty-section">No order plan lines found. Create allocations in the Order Plan Manager first.</div>
@@ -334,9 +337,9 @@
 
                         <table class="pipe-table">
                             <colgroup>
-                                <col style="width:32px" /><col style="width:110px" /><col style="width:12%" /><col style="width:100px" /><col style="width:85px" /><col style="width:100px" /><col style="width:80px" /><col style="width:120px" />
+                                <col style="width:32px" /><col style="width:110px" /><col style="width:12%" /><col style="width:100px" /><col style="width:85px" /><col style="width:80px" /><col style="width:100px" /><col style="width:80px" /><col style="width:120px" />
                             </colgroup>
-                            <thead><tr><th></th><th>SKU</th><th>Model</th><th>Color</th><th class="col-right">Qty</th><th>BD#</th><th>Customization</th><th>DO Folder</th></tr></thead>
+                            <thead><tr><th></th><th>SKU</th><th>Model</th><th>Color</th><th>Qty</th><th>Status</th><th>BD#</th><th>Customization</th><th>DO Folder</th></tr></thead>
                             <tbody>
                                 <template v-for="batch in group.batches" :key="batch.key">
                                     <tr v-for="(item, itemIdx) in batch.items" :key="item.lineId" :class="{ 'batch-first': itemIdx === 0 }">
@@ -344,7 +347,8 @@
                                         <td class="cell-mono">{{ item.sku }}</td>
                                         <td>{{ item.model }}</td>
                                         <td>{{ item.color }}</td>
-                                        <td class="col-right cell-mono" style="white-space:nowrap">{{ item.qtyDisplay }}</td>
+                                        <td class="cell-mono" style="white-space:nowrap">{{ item.qtyDisplay }}</td>
+                                        <td><span class="status-tag" :class="'st--' + statusKey(item.status)">{{ item.status }}</span></td>
                                         <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-batch">
                                             <div v-if="batch.bd_number && !isEditing('bd', batch.key)" class="field-display">
                                                 <span class="field-value cell-mono">{{ batch.bd_number }}</span>
@@ -521,7 +525,7 @@ export default {
                 if (!batch.bd_number && line.bd_number) batch.bd_number = line.bd_number;
                 if (!batch.do_folder && line.do_folder) batch.do_folder = line.do_folder;
                 if (line.labor) { const label = laborDisplay(line.labor); if (label && !batch._laborSet.has(label)) { batch._laborSet.add(label); batch.labors.push(label); } }
-                batch.items.push({ lineId: line.id, sku: line._bookingItem?.sku || '-', imagelink: line._inv?.imagelink || '', model: line._inv?.model || 'Unknown', color: line._inv?.color || '-', qty: line.quantity_assigned || 0, qtyDisplay: `${line.quantity_assigned || 0}/${line._bookingItem?.quantity || '?'}` });
+                batch.items.push({ lineId: line.id, sku: line._bookingItem?.sku || '-', imagelink: line._inv?.imagelink || '', model: line._inv?.model || 'Unknown', color: line._inv?.color || '-', qty: line.quantity_assigned || 0, qtyDisplay: `${line.quantity_assigned || 0}/${line._bookingItem?.quantity || '?'}`, status: line._bookingItem?.status || 'Booked' });
             }
             const batches = Object.values(batchMap);
             for (const batch of batches) { batch.bdStatus = getFieldStatus(batch._bdNumbers); batch.doStatus = getFieldStatus(batch._doFolders); }
@@ -775,8 +779,9 @@ export default {
                     id: h.id, opid: h.opid, title: form.title, pic_bda: form.pic_bda || null, pic_ops: form.pic_ops || null,
                     quoteref: form.quoteref || null, invoiceref: form.invoiceref || null,
                     status: action === 'request_process' ? 'Submitted' : (h.status || 'Draft'),
+                    created_at: h.created_at || null,
                     updated_at: now,
-                    ...(action === 'request_process' ? { submitted_at: now } : {}),
+                    submitted_at: action === 'request_process' ? now : (h.submitted_at || null),
                 },
                 orderplan_deliveries: deliveries,
                 orderplan_attbookings: attbookings,
@@ -805,6 +810,13 @@ export default {
             emit('trigger-event', { name: 'onDeleteOrderPlan', event: { value: { headerId: h?.id || null, opid: h?.opid || null } } });
         }
 
+        function handleUnsubmitOrderPlan() {
+            /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
+            const h = currentHeader.value;
+            pendingAction.value = 'unsubmit';
+            emit('trigger-event', { name: 'onUnsubmitOrderPlan', event: { value: { headerId: h?.id || null, opid: h?.opid || null, status: 'Draft' } } });
+        }
+
         // ── Action tracking ──
         const pendingAction = ref(null);
         const actionFailed = ref(false);
@@ -818,7 +830,7 @@ export default {
                 if (pendingAction.value === 'save' || pendingAction.value === 'submit') opEditMode.value = false;
                 pendingAction.value = null; actionFailed.value = false;
             } else if (newStatus === 'failed') {
-                actionFailedLabel.value = pendingAction.value === 'save' ? 'Save' : pendingAction.value === 'submit' ? 'Submit' : 'Delete';
+                actionFailedLabel.value = pendingAction.value === 'save' ? 'Save' : pendingAction.value === 'submit' ? 'Submit' : pendingAction.value === 'unsubmit' ? 'Unsubmit' : 'Delete';
                 pendingAction.value = null; actionFailed.value = true;
             }
         });
@@ -859,7 +871,7 @@ export default {
             filteredBookingsForConnect, isBookingAttached, attachFormBooking, detachFormBooking,
             itemsForBooking, getAllocs, allocTotal, allocSummaryClass,
             updateAllocQty, updateAllocField, handleSplitAlloc, removeAllocRow,
-            handleSaveOrderPlan, handleSubmitOrderPlan, handleDeleteOrderPlan,
+            handleSaveOrderPlan, handleSubmitOrderPlan, handleDeleteOrderPlan, handleUnsubmitOrderPlan,
             bookingHeaderLookup,
             exportOverlay, exportCopied, openExportOverlay, copyExportText,
         };
@@ -934,7 +946,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .meta-select { width: 100%; padding: 4px 8px; border: 1px solid $gray-200; font-size: 12px; font-family: $font; color: $gray-900; background: $white; outline: none; }
 
 /* ═══ SHARED TABLE HELPERS ═══ */
-.col-right { text-align: right; }
+.col-left { text-align: left; }
 .cell-mono { font-family: $font; font-size: 11px; }
 .cell-muted { color: $gray-400; }
 .cell-neg { color: $red; font-weight: 700; }
@@ -956,6 +968,14 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .ss--issue-raised { background-color: $red-50; color: $red-dark; }
 .ss--processing { background-color: $amber-50; color: darken($amber, 10%); }
 .ss--delivered { background-color: $green-50; color: $green; }
+
+.status-tag {
+    display: inline-block; padding: 2px 8px; font-size: 10px; font-weight: 600; font-family: $font; border-radius: 3px; white-space: nowrap;
+}
+.st--booked { background-color: $blue-50; color: $blue; }
+.st--issue-raised { background-color: $red-50; color: $red-dark; }
+.st--processing { background-color: $amber-50; color: darken($amber, 10%); }
+.st--delivered { background-color: $green-50; color: $green; }
 
 /* ═══ TOGGLE BAR ═══ */
 .toggle-bar { display: flex; gap: 0; padding: 0 16px; border-bottom: 2px solid $gray-200; background: $white; }
