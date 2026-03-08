@@ -63,6 +63,41 @@
                         </tr>
                     </tbody>
                 </table>
+                <!-- Booking Items Detail (per attached booking) -->
+                <div v-for="booking in attachedBookings" :key="'detail-' + booking.id" class="booking-detail-block">
+                    <h4 class="booking-detail-title">{{ booking.bookingnumber }} — {{ booking.bookingtitle }}</h4>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Image</th>
+                                <th>SKU</th>
+                                <th>Model</th>
+                                <th>Color</th>
+                                <th class="col-right">Qty</th>
+                                <th>Status</th>
+                                <th class="col-right">Balance Ref</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in booking._items" :key="item.id">
+                                <td class="cell-img"><img v-if="item._inv?.imagelink" :src="item._inv.imagelink" class="thumb" /><span v-else class="thumb-empty">-</span></td>
+                                <td class="cell-mono">{{ item.sku }}</td>
+                                <td>{{ item._inv?.model || 'Unknown' }}</td>
+                                <td>{{ item._inv?.color || '-' }}</td>
+                                <td class="col-right">{{ item.quantity }}</td>
+                                <td>
+                                    <select class="status-select" :class="'ss--' + statusKey(item.status)" :value="item.status || 'Booked'" @change="handleStatusChange(item.id, $event.target.value)">
+                                        <option value="Booked">Booked</option>
+                                        <option value="Issue Raised">Issue Raised</option>
+                                        <option value="Processing">Processing</option>
+                                        <option value="Delivered">Delivered</option>
+                                    </select>
+                                </td>
+                                <td class="col-right" :class="{ 'cell-neg': (item.balanceref ?? 0) < 0 }">{{ item.balanceref ?? '-' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </section>
 
             <!-- Toggle Bar -->
@@ -129,44 +164,6 @@
                     </div>
                 </section>
 
-                <!-- Booking Items Detail -->
-                <section class="section">
-                    <h3 class="section-heading">Booking Items Detail</h3>
-                    <div v-for="booking in attachedBookings" :key="'detail-' + booking.id" class="booking-detail-block">
-                        <h4 class="booking-detail-title">{{ booking.bookingnumber }} — {{ booking.bookingtitle }}</h4>
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Image</th>
-                                    <th>SKU</th>
-                                    <th>Model</th>
-                                    <th>Color</th>
-                                    <th class="col-right">Qty</th>
-                                    <th>Status</th>
-                                    <th class="col-right">Balance Ref</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="item in booking._items" :key="item.id">
-                                    <td class="cell-img"><img v-if="item._inv?.imagelink" :src="item._inv.imagelink" class="thumb" /><span v-else class="thumb-empty">-</span></td>
-                                    <td class="cell-mono">{{ item.sku }}</td>
-                                    <td>{{ item._inv?.model || 'Unknown' }}</td>
-                                    <td>{{ item._inv?.color || '-' }}</td>
-                                    <td class="col-right">{{ item.quantity }}</td>
-                                    <td>
-                                        <select class="status-select" :class="'ss--' + statusKey(item.status)" :value="item.status || 'Booked'" @change="handleStatusChange(item.id, $event.target.value)">
-                                            <option value="Booked">Booked</option>
-                                            <option value="Issue Raised">Issue Raised</option>
-                                            <option value="Processing">Processing</option>
-                                            <option value="Delivered">Delivered</option>
-                                        </select>
-                                    </td>
-                                    <td class="col-right" :class="{ 'cell-neg': (item.balanceref ?? 0) < 0 }">{{ item.balanceref ?? '-' }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
             </div>
 
             <!-- ═══ PIPELINE MANAGER VIEW ═══ -->
