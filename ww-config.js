@@ -26,7 +26,7 @@ export default {
             {
                 label: 'Reference Data',
                 isCollapsible: true,
-                properties: ['inventoryData', 'teammatesList'],
+                properties: ['inventoryData', 'teammatesList', 'customizationOptions', 'laborOptions'],
             },
             {
                 label: 'Colors',
@@ -76,6 +76,24 @@ export default {
                     do_folder: null,
                 },
             },
+            default: false,
+        },
+        {
+            name: 'onSaveOrderPlan',
+            label: { en: 'On Save Order Plan' },
+            event: { value: {} },
+            default: false,
+        },
+        {
+            name: 'onSubmitOrderPlan',
+            label: { en: 'On Submit Order Plan' },
+            event: { value: {} },
+            default: false,
+        },
+        {
+            name: 'onDeleteOrderPlan',
+            label: { en: 'On Delete Order Plan' },
+            event: { value: { headerId: null, opid: null } },
             default: false,
         },
     ],
@@ -209,6 +227,32 @@ export default {
                 tooltip: 'Array of teammates: { id, name, type, email, phone }',
             },
             /* wwEditor:end */
+        },
+        customizationOptions: {
+            label: { en: 'Customization Options' },
+            type: 'ObjectList',
+            section: 'settings',
+            bindable: true,
+            defaultValue: [
+                { value: 'None', label: 'None' },
+                { value: 'UV 1 Logo', label: 'UV 1 Logo' },
+                { value: 'UV 2 Logo', label: 'UV 2 Logo' },
+                { value: 'UV 360', label: 'UV 360' },
+                { value: 'Laser Engraving', label: 'Laser Engraving' },
+                { value: 'Debossing', label: 'Debossing' },
+            ],
+        },
+        laborOptions: {
+            label: { en: 'Labor Options' },
+            type: 'ObjectList',
+            section: 'settings',
+            bindable: true,
+            defaultValue: [
+                { value: '', label: 'None' },
+                { value: 'sleeving', label: 'Box Sleeving' },
+                { value: 'giftbox', label: 'Standard Gift Box' },
+                { value: 'giftbox_addons', label: 'Gift Box + Addons' },
+            ],
         },
         colorHeaderBarBg: {
             label: { en: 'Header Bar Background' },
