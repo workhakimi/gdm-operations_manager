@@ -287,7 +287,7 @@
                                             </td>
                                             <td>
                                                 <select class="edit-select" :value="alloc.customization" @change="updateAllocField(fabId, item.id, aIdx, 'customization', $event.target.value)">
-                                                    <option v-for="opt in custOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                                    <option v-for="opt in custOptions" :key="opt.customization_sku" :value="opt.customization_sku">{{ opt.subtype }}</option>
                                                 </select>
                                             </td>
                                             <td>
@@ -457,8 +457,7 @@ export default {
         });
 
         // ── Dropdown options ──
-        const DEFAULT_CUST_OPTIONS = [
-            { type: 'NONE', subtype: 'None', customization_sku: null },
+        const custOptions = [
             { type: 'UV', subtype: 'UV 1 LOGO', customization_sku: 'UV-ICON' },
             { type: 'UV', subtype: 'UV 2 LOGO', customization_sku: 'UV-ICON-2' },
             { type: 'UV', subtype: 'UV 360', customization_sku: 'UV-360' },
@@ -471,15 +470,11 @@ export default {
             { type: 'UV+LASER', subtype: 'Both UV Laser (1 Logo & 1 Name)', customization_sku: 'UVEGV-SET' },
             { type: 'UV+LASER', subtype: 'Both UV Laser (2 Logo & 1 Name)', customization_sku: 'UVEGV-SET-2' },
             { type: 'UV+LASER', subtype: 'Both UV Laser (360 & 1 Name)', customization_sku: 'UVEGV-SET-360' },
+            { type: 'NONE', subtype: 'None', customization_sku: null },
         ];
-        const custOptions = computed(() => {
-            const raw = props.content?.customizationOptions;
-            if (Array.isArray(raw) && raw.length && raw[0].value !== undefined) return raw;
-            const src = (Array.isArray(raw) && raw.length) ? raw : DEFAULT_CUST_OPTIONS;
-            return src.map(o => ({ value: o.customization_sku || '', label: o.subtype || o.type || 'None' }));
-        });
-        const custLabelLookup = computed(() => { const m = {}; for (const o of custOptions.value) m[o.value] = o.label; return m; });
-        function custDisplay(val) { if (!val) return 'None'; return custLabelLookup.value[val] || val; }
+        const custSkuToLabel = {};
+        for (const o of custOptions) { custSkuToLabel[o.customization_sku || ''] = o.subtype; }
+        function custDisplay(val) { if (!val) return 'None'; return custSkuToLabel[val] || val; }
         const labOptions = computed(() => {
             const raw = props.content?.laborOptions;
             if (Array.isArray(raw) && raw.length) return raw;
