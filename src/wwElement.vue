@@ -379,9 +379,8 @@
                                                     <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
                                                 </div>
                                             </td>
-                                            <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-batch">
-                                                <span>{{ custDisplay(batch.customization) }}</span>
-                                                <span v-for="l in batch.labors" :key="l" class="labor-tag">{{ l }}</span>
+                                            <td>
+                                                <span>{{ item.customizationSubtype }}</span>
                                             </td>
                                             <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-batch">
                                                 <div v-if="batch.do_folder && !isEditing('do', batch.key)" class="field-display">
@@ -484,8 +483,10 @@ export default {
             { type: 'NONE', subtype: 'None', customization_sku: null },
         ];
         const custSkuToLabel = {};
-        for (const o of custOptions) { custSkuToLabel[o.customization_sku || ''] = o.subtype; }
+        const custSkuToType = {};
+        for (const o of custOptions) { custSkuToLabel[o.customization_sku || ''] = o.subtype; custSkuToType[o.customization_sku || ''] = o.type; }
         function custDisplay(val) { if (!val) return 'None'; return custSkuToLabel[val] || val; }
+        function custType(val) { if (!val) return 'NONE'; return custSkuToType[val] || 'NONE'; }
         const labOptions = computed(() => {
             const raw = props.content?.laborOptions;
             if (Array.isArray(raw) && raw.length) return raw;
@@ -545,9 +546,10 @@ export default {
         const pipelineBatches = computed(() => {
             const batchMap = {};
             for (const line of resolvedLines.value) {
-                const key = `${line.deliveries_headerid}::${line.customization || 'None'}`;
+                const type = custType(line.customization);
+                const key = `${line.deliveries_headerid}::${type}`;
                 if (!batchMap[key]) {
-                    batchMap[key] = { key, deliveries_headerid: line.deliveries_headerid, customization: line.customization || 'None', deliveryLabel: line._delivery?.label || 'Unknown', delivery: line._delivery || null, bd_number: '', do_folder: '', labors: [], items: [], _laborSet: new Set(), _bdNumbers: [], _doFolders: [] };
+                    batchMap[key] = { key, deliveries_headerid: line.deliveries_headerid, customizationType: type, deliveryLabel: line._delivery?.label || 'Unknown', delivery: line._delivery || null, bd_number: '', do_folder: '', labors: [], items: [], _laborSet: new Set(), _bdNumbers: [], _doFolders: [] };
                 }
                 const batch = batchMap[key];
                 batch._bdNumbers.push(line.bd_number || '');
@@ -555,7 +557,7 @@ export default {
                 if (!batch.bd_number && line.bd_number) batch.bd_number = line.bd_number;
                 if (!batch.do_folder && line.do_folder) batch.do_folder = line.do_folder;
                 if (line.labor) { const label = laborDisplay(line.labor); if (label && !batch._laborSet.has(label)) { batch._laborSet.add(label); batch.labors.push(label); } }
-                batch.items.push({ lineId: line.id, sku: line._bookingItem?.sku || '-', imagelink: line._inv?.imagelink || '', model: line._inv?.model || 'Unknown', color: line._inv?.color || '-', qty: line.quantity_assigned || 0, qtyDisplay: `${line.quantity_assigned || 0}/${line._bookingItem?.quantity || '?'}`, status: line._bookingItem?.status || 'Booked' });
+                batch.items.push({ lineId: line.id, sku: line._bookingItem?.sku || '-', imagelink: line._inv?.imagelink || '', model: line._inv?.model || 'Unknown', color: line._inv?.color || '-', qty: line.quantity_assigned || 0, qtyDisplay: `${line.quantity_assigned || 0}/${line._bookingItem?.quantity || '?'}`, status: line._bookingItem?.status || 'Booked', customizationSubtype: custDisplay(line.customization) });
             }
             const batches = Object.values(batchMap);
             for (const batch of batches) { batch.bdStatus = getFieldStatus(batch._bdNumbers); batch.doStatus = getFieldStatus(batch._doFolders); }
