@@ -182,7 +182,7 @@
                                             <td>{{ line._inv?.color || '-' }}</td>
                                             <td class="col-left cell-mono">{{ line.quantity_assigned }}/{{ line._bookingItem?.quantity || '?' }}</td>
                                             <td><span v-if="isSplit(line)" class="split-tag">Split</span><span v-else class="cell-muted">-</span></td>
-                                            <td>{{ line.customization || 'None' }}</td>
+                                            <td>{{ custDisplay(line.customization) }}</td>
                                             <td>{{ laborDisplay(line.labor) || 'None' }}</td>
                                             <td>
                                                 <select class="status-select" :class="'ss--' + statusKey(line._bookingItem?.status)" :value="line._bookingItem?.status || 'Booked'" @change="handleStatusChange(line.bookingitems_headerid, $event.target.value)">
@@ -370,7 +370,7 @@
                                                 </div>
                                             </td>
                                             <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-batch">
-                                                <span>{{ batch.customization || 'None' }}</span>
+                                                <span>{{ custDisplay(batch.customization) }}</span>
                                                 <span v-for="l in batch.labors" :key="l" class="labor-tag">{{ l }}</span>
                                             </td>
                                             <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-batch">
@@ -457,11 +457,28 @@ export default {
         });
 
         // ── Dropdown options ──
+        const DEFAULT_CUST_OPTIONS = [
+            { type: 'NONE', subtype: 'None', customization_sku: null },
+            { type: 'UV', subtype: 'UV 1 LOGO', customization_sku: 'UV-ICON' },
+            { type: 'UV', subtype: 'UV 2 LOGO', customization_sku: 'UV-ICON-2' },
+            { type: 'UV', subtype: 'UV 360', customization_sku: 'UV-360' },
+            { type: 'LASER', subtype: 'Laser (1 Logo)', customization_sku: 'EGV-ICON' },
+            { type: 'LASER', subtype: 'Laser (1 Large Logo)', customization_sku: 'EGV-ICON-LARGE' },
+            { type: 'LASER', subtype: 'Laser (2 Logos)', customization_sku: 'EGV-ICON-2' },
+            { type: 'LASER', subtype: 'Laser (Name only)', customization_sku: 'EGV-TEXT' },
+            { type: 'LASER', subtype: 'Laser (1 Logo & 1 Name)', customization_sku: 'EGV-SET' },
+            { type: 'LASER', subtype: 'Laser (2 Logo & 1 Name)', customization_sku: 'EGV-SET-2' },
+            { type: 'UV+LASER', subtype: 'Both UV Laser (1 Logo & 1 Name)', customization_sku: 'UVEGV-SET' },
+            { type: 'UV+LASER', subtype: 'Both UV Laser (2 Logo & 1 Name)', customization_sku: 'UVEGV-SET-2' },
+            { type: 'UV+LASER', subtype: 'Both UV Laser (360 & 1 Name)', customization_sku: 'UVEGV-SET-360' },
+        ];
         const custOptions = computed(() => {
             const raw = props.content?.customizationOptions;
-            if (Array.isArray(raw) && raw.length) return raw;
-            return [{ value: 'None', label: 'None' }, { value: 'UV 1 Logo', label: 'UV 1 Logo' }, { value: 'UV 2 Logo', label: 'UV 2 Logo' }, { value: 'UV 360', label: 'UV 360' }, { value: 'Laser Engraving', label: 'Laser Engraving' }, { value: 'Debossing', label: 'Debossing' }];
+            const src = (Array.isArray(raw) && raw.length) ? raw : DEFAULT_CUST_OPTIONS;
+            return src.map(o => ({ value: o.customization_sku ?? '', label: o.subtype || o.type || 'None' }));
         });
+        const custLabelLookup = computed(() => { const m = {}; for (const o of custOptions.value) m[o.value] = o.label; return m; });
+        function custDisplay(val) { if (!val) return 'None'; return custLabelLookup.value[val] || val; }
         const labOptions = computed(() => {
             const raw = props.content?.laborOptions;
             if (Array.isArray(raw) && raw.length) return raw;
@@ -647,7 +664,7 @@ export default {
                     _uid: uid(), _existingId: line.id,
                     quantity_assigned: line.quantity_assigned || 0,
                     deliveries_uid: delIdToUid[line.deliveries_headerid] || '',
-                    customization: line.customization || 'None',
+                    customization: line.customization || '',
                     mockup_link: line.mockup_link || '',
                     labor: line.labor || '',
                     splitgroupid: line.splitgroupid || '',
@@ -691,7 +708,7 @@ export default {
             for (const item of items) {
                 const key = `${bh.id}::${item.id}`;
                 if (!formAllocations[key]) {
-                    formAllocations[key] = [{ _uid: uid(), _existingId: null, quantity_assigned: item.quantity || 0, deliveries_uid: formDeliveries.value[0]?._uid || '', customization: 'None', mockup_link: '', labor: '', splitgroupid: uid() }];
+                    formAllocations[key] = [{ _uid: uid(), _existingId: null, quantity_assigned: item.quantity || 0, deliveries_uid: formDeliveries.value[0]?._uid || '', customization: '', mockup_link: '', labor: '', splitgroupid: uid() }];
                 }
             }
             showBookingDropdown.value = false;
@@ -771,7 +788,7 @@ export default {
                         bookingitems_headerid: biId,
                         deliveries_headerid: null, // resolved on backend via _deliveries_uid
                         _deliveries_uid: alloc.deliveries_uid,
-                        customization: alloc.customization === 'None' ? null : alloc.customization,
+                        customization: (!alloc.customization || alloc.customization === 'None') ? null : alloc.customization,
                         quantity_assigned: parseInt(alloc.quantity_assigned) || 0,
                         splitgroupid: alloc.splitgroupid || null,
                         mockup_link: alloc.mockup_link || null,
@@ -872,7 +889,7 @@ export default {
             handleRetry, pendingAction, actionFailed, actionFailedLabel,
             // Order Plan Edit
             opEditMode, form, formDeliveries, formAttachedBookingIds, formAllocations,
-            showBookingDropdown, bookingSearch, custOptions, labOptions,
+            showBookingDropdown, bookingSearch, custOptions, labOptions, custDisplay,
             enterEditMode, cancelEditMode, addFormDelivery, removeFormDelivery,
             filteredBookingsForConnect, isBookingAttached, attachFormBooking, detachFormBooking,
             itemsForBooking, getAllocs, allocTotal, allocSummaryClass,
