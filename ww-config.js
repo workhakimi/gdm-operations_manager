@@ -102,6 +102,18 @@ export default {
             event: { value: { headerId: null, opid: null, status: 'Draft' } },
             default: false,
         },
+        {
+            name: 'onUnsetBdNumber',
+            label: { en: 'On Unset BD Number' },
+            event: { value: { batch_key: null, line_ids: [] } },
+            default: false,
+        },
+        {
+            name: 'onUnsetDoLink',
+            label: { en: 'On Unset DO Link' },
+            event: { value: { batch_key: null, line_ids: [] } },
+            default: false,
+        },
     ],
     properties: {
         selectedOrderPlanId: {

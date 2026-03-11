@@ -121,11 +121,11 @@
                 <div class="edit-bar">
                     <template v-if="!opEditMode">
                         <button type="button" class="btn-action btn-action--primary" @click="enterEditMode">Edit Order Plan</button>
+                        <button type="button" class="btn-action btn-action--submit" @click="handleSubmitOrderPlan">Submit</button>
                     </template>
                     <template v-else>
                         <button type="button" class="btn-action btn-action--muted" @click="cancelEditMode">Cancel</button>
                         <button type="button" class="btn-action btn-action--primary" @click="handleSaveOrderPlan">Save Draft</button>
-                        <button type="button" class="btn-action btn-action--submit" @click="handleSubmitOrderPlan">Submit</button>
                         <button type="button" class="btn-action btn-action--danger" @click="handleDeleteOrderPlan">Delete</button>
                     </template>
                 </div>
@@ -369,6 +369,7 @@
                                                     <span v-if="batch.bdStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines missing BD#"></span>
                                                     <span v-if="batch.bdStatus === 'conflict'" class="status-dot status-dot--error" title="Conflicting BD numbers"></span>
                                                     <button type="button" class="btn-edit" @click="startEditing('bd', batch.key)" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                                                    <button type="button" class="btn-icon btn-icon--danger" @click="handleUnsetBdNumber(batch.key)" title="Clear BD#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                                                     <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
                                                 </div>
                                                 <div v-else class="input-with-btn">
@@ -388,6 +389,7 @@
                                                     <span v-if="batch.doStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines missing DO link"></span>
                                                     <span v-if="batch.doStatus === 'conflict'" class="status-dot status-dot--error" title="Conflicting DO links"></span>
                                                     <button type="button" class="btn-edit" @click="startEditing('do', batch.key)" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                                                    <button type="button" class="btn-icon btn-icon--danger" @click="handleUnsetDoLink(batch.key)" title="Clear DO Link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                                                 </div>
                                                 <div v-else class="input-with-btn">
                                                     <input type="text" class="inline-input inline-input--wide" :ref="el => setDoRef(batch.key, el)" :value="batch.do_folder" placeholder="Paste link" />
@@ -619,6 +621,16 @@ export default {
             const value = doRefs[batchKey]?.value || '';
             dispatchAction('do_link', 'onSetDoLink', { batch_key: batchKey, line_ids: batch.items.map(i => i.lineId), do_folder: value });
             stopEditing('do', batchKey);
+        }
+        function handleUnsetBdNumber(batchKey) {
+            /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
+            const batch = pipelineBatches.value.find(b => b.key === batchKey); if (!batch) return;
+            dispatchAction('bd_number', 'onUnsetBdNumber', { batch_key: batchKey, line_ids: batch.items.map(i => i.lineId) });
+        }
+        function handleUnsetDoLink(batchKey) {
+            /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
+            const batch = pipelineBatches.value.find(b => b.key === batchKey); if (!batch) return;
+            dispatchAction('do_link', 'onUnsetDoLink', { batch_key: batchKey, line_ids: batch.items.map(i => i.lineId) });
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -914,7 +926,7 @@ export default {
         function handleRetry() {
             if (!_lastEvent) { actionFailed.value = false; return; }
             actionFailed.value = false;
-            const keyMap = { onSaveOrderPlan: 'save', onSubmitOrderPlan: 'submit', onDeleteOrderPlan: 'delete', onUnsubmitOrderPlan: 'unsubmit', onUpdateItemStatus: 'status', onSetBdNumber: 'bd_number', onSetDoLink: 'do_link' };
+            const keyMap = { onSaveOrderPlan: 'save', onSubmitOrderPlan: 'submit', onDeleteOrderPlan: 'delete', onUnsubmitOrderPlan: 'unsubmit', onUpdateItemStatus: 'status', onSetBdNumber: 'bd_number', onSetDoLink: 'do_link', onUnsetBdNumber: 'bd_number', onUnsetDoLink: 'do_link' };
             pendingAction.value = keyMap[_lastEvent.name] || 'action';
             emit('trigger-event', _lastEvent);
             startActionTimer();
@@ -965,7 +977,7 @@ export default {
             getTeammateName, formatDate, statusKey, laborDisplay,
             handleStatusChange, handleSetBdNumber, handleSetDoLink,
             setBdRef, setDoRef, isEditing, startEditing, stopEditing,
-            handleRetry, pendingAction, actionFailed, actionSuccess, actionFailedLabel,
+            handleRetry, handleUnsetBdNumber, handleUnsetDoLink, pendingAction, actionFailed, actionSuccess, actionFailedLabel,
             // Order Plan Edit
             opEditMode, form, formDeliveries, formAttachedBookingIds, formAllocations,
             showBookingDropdown, bookingSearch, custOptions, labOptions, custDisplay,
