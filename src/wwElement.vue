@@ -624,6 +624,7 @@ export default {
         const formDeliveries = ref([]);
         const formAttachedBookingIds = ref([]);
         const formAllocations = reactive({}); // key: `${bookingHeaderId}::${bookingItemId}` => array of alloc objects
+        let _attBookingRecords = {}; // lookup by booking_headerid → { id, headerid, created_at }
         const showBookingDropdown = ref(false);
         const bookingSearch = ref('');
 
@@ -643,10 +644,15 @@ export default {
                 address: d.address || '', remarks: d.remarks || '',
                 pic_name: d.pic_name || '', pic_phone: d.pic_phone || '',
                 deadline: d.deadline ? d.deadline.slice(0, 16) : '',
+                _existingHeaderid: d.headerid || null,
             }));
 
-            // Load attached bookings
+            // Load attached bookings (preserve ids + created_at)
             formAttachedBookingIds.value = currentAttBookings.value.map(ab => ab.booking_headerid);
+            _attBookingRecords = {};
+            for (const ab of currentAttBookings.value) {
+                _attBookingRecords[ab.booking_headerid] = { id: ab.id, headerid: ab.headerid, created_at: ab.created_at };
+            }
 
             // Load allocations from lines
             // Clear old
@@ -662,6 +668,7 @@ export default {
                 if (!formAllocations[key]) formAllocations[key] = [];
                 formAllocations[key].push({
                     _uid: uid(), _existingId: line.id,
+                    _existingCreatedAt: line.created_at || null,
                     quantity_assigned: line.quantity_assigned || 0,
                     deliveries_uid: delIdToUid[line.deliveries_headerid] || '',
                     customization: line.customization || '',
@@ -770,24 +777,50 @@ export default {
         }
 
         // ── Build payload & emit ──
+        function genId() { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16); }); }
+
         function buildPayload(action) {
             const h = currentHeader.value;
             const now = new Date().toISOString();
-            const delUidToIdx = {};
-            const deliveries = formDeliveries.value.map((fd, i) => { delUidToIdx[fd._uid] = i; return { id: fd._existingId || null, headerid: h.id, label: fd.label, deliverytype: fd.deliverytype, address: fd.address, remarks: fd.remarks, pic_name: fd.pic_name, pic_phone: fd.pic_phone, deadline: fd.deadline || null, _uid: fd._uid }; });
-            const attbookings = formAttachedBookingIds.value.map(bhId => {
-                const existing = currentAttBookings.value.find(ab => ab.booking_headerid === bhId);
-                return { id: existing?.id || null, headerid: h.id, booking_headerid: bhId };
+
+            const delUidToId = {};
+            const deliveries = formDeliveries.value.map(fd => {
+                const id = fd._existingId || genId();
+                delUidToId[fd._uid] = id;
+                return {
+                    id,
+                    headerid: h.id,
+                    label: fd.label,
+                    deliverytype: fd.deliverytype,
+                    address: fd.address,
+                    remarks: fd.remarks,
+                    pic_name: fd.pic_name,
+                    pic_phone: fd.pic_phone,
+                    deadline: fd.deadline || null,
+                };
             });
+
+            const attbookings = formAttachedBookingIds.value.map(bhId => {
+                const existing = _attBookingRecords[bhId];
+                return {
+                    id: existing?.id || genId(),
+                    headerid: h.id,
+                    created_at: existing?.created_at || now,
+                    booking_headerid: bhId,
+                };
+            });
+
             const lines = [];
             for (const key of Object.keys(formAllocations)) {
                 const [, biId] = key.split('::');
                 for (const alloc of formAllocations[key]) {
                     lines.push({
-                        id: alloc._existingId || null, headerid: h.id,
+                        id: alloc._existingId || genId(),
+                        headerid: h.id,
+                        created_at: alloc._existingCreatedAt || now,
+                        updated_at: now,
                         bookingitems_headerid: biId,
-                        deliveries_headerid: null, // resolved on backend via _deliveries_uid
-                        _deliveries_uid: alloc.deliveries_uid,
+                        deliveries_headerid: delUidToId[alloc.deliveries_uid] || null,
                         customization: (!alloc.customization || alloc.customization === 'None') ? null : alloc.customization,
                         quantity_assigned: parseInt(alloc.quantity_assigned) || 0,
                         splitgroupid: alloc.splitgroupid || null,
@@ -799,8 +832,13 @@ export default {
             return {
                 action,
                 orderplan_headers: {
-                    id: h.id, opid: h.opid, title: form.title, pic_bda: form.pic_bda || null, pic_ops: form.pic_ops || null,
-                    quoteref: form.quoteref || null, invoiceref: form.invoiceref || null,
+                    id: h.id,
+                    opid: h.opid,
+                    title: form.title,
+                    pic_bda: form.pic_bda || null,
+                    pic_ops: form.pic_ops || null,
+                    quoteref: form.quoteref || null,
+                    invoiceref: form.invoiceref || null,
                     status: action === 'request_process' ? 'Submitted' : (h.status || 'Draft'),
                     created_at: h.created_at || null,
                     updated_at: now,
