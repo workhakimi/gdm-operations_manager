@@ -714,7 +714,7 @@ export default {
             for (const item of items) {
                 const key = `${bh.id}::${item.id}`;
                 if (!formAllocations[key]) {
-                    formAllocations[key] = [{ _uid: uid(), _existingId: null, quantity_assigned: item.quantity || 0, deliveries_uid: formDeliveries.value[0]?._uid || '', customization: '', mockup_link: '', labor: '', splitgroupid: uid() }];
+                    formAllocations[key] = [{ _uid: uid(), _existingId: null, quantity_assigned: item.quantity || 0, deliveries_uid: formDeliveries.value[0]?._uid || '', customization: '', mockup_link: '', labor: '', splitgroupid: genId() }];
                 }
             }
             showBookingDropdown.value = false;
@@ -760,7 +760,7 @@ export default {
             const half = Math.floor(src.quantity_assigned / 2);
             const remainder = src.quantity_assigned - half;
             src.quantity_assigned = half;
-            const newAlloc = { _uid: uid(), _existingId: null, quantity_assigned: remainder, deliveries_uid: src.deliveries_uid, customization: src.customization, mockup_link: src.mockup_link, labor: src.labor, splitgroupid: src.splitgroupid || uid() };
+            const newAlloc = { _uid: uid(), _existingId: null, quantity_assigned: remainder, deliveries_uid: src.deliveries_uid, customization: src.customization, mockup_link: src.mockup_link, labor: src.labor, splitgroupid: src.splitgroupid || genId() };
             if (!src.splitgroupid) src.splitgroupid = newAlloc.splitgroupid;
             allocs.splice(aIdx + 1, 0, newAlloc);
         }
