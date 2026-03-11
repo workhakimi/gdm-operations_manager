@@ -356,6 +356,7 @@
                                 <thead><tr><th></th><th>SKU</th><th>Model</th><th>Color</th><th>Qty</th><th>Status</th><th>BD#</th><th>Customization</th><th>DO Folder</th></tr></thead>
                                 <tbody>
                                     <template v-for="batch in group.batches" :key="batch.key">
+                                        <tr class="batch-header-row"><td colspan="9"><span class="batch-type-tag">{{ batch.customizationType }}</span></td></tr>
                                         <tr v-for="(item, itemIdx) in batch.items" :key="item.lineId" :class="{ 'batch-first': itemIdx === 0 }">
                                             <td class="cell-img"><img v-if="item.imagelink" :src="item.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
                                             <td class="cell-mono">{{ item.sku }}</td>
@@ -1271,6 +1272,8 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
     tr:last-child td { border-bottom: none; }
 }
 .batch-first td { border-top: 2px solid var(--c-batch-sep, $gray-200); }
+.batch-header-row td { padding: 6px 10px; background: $gray-100; border-bottom: 1px solid $gray-200; text-align: right; }
+.batch-type-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; background: #e2e8f0; padding: 2px 8px; border-radius: 3px; }
 .pipe-table tbody tr:first-child td { border-top: none; }
 .cell-batch { vertical-align: middle; background: $gray-50; border-left: 1px solid $gray-200; padding: 6px 10px; }
 .thumb-sm { width: 28px; height: 28px; object-fit: cover; display: block; }
