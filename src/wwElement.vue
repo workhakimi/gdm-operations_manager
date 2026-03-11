@@ -584,6 +584,7 @@ export default {
         // ── Event handlers ──
         function handleStatusChange(bookingItemId, newStatus) {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
+            pendingAction.value = 'status';
             emit('trigger-event', { name: 'onUpdateItemStatus', event: { value: { booking_item_id: bookingItemId, new_status: newStatus } } });
         }
 
@@ -601,6 +602,7 @@ export default {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const batch = pipelineBatches.value.find(b => b.key === batchKey); if (!batch) return;
             const value = bdRefs[batchKey]?.value || '';
+            pendingAction.value = 'bd_number';
             emit('trigger-event', { name: 'onSetBdNumber', event: { value: { batch_key: batchKey, line_ids: batch.items.map(i => i.lineId), bd_number: value } } });
             stopEditing('bd', batchKey);
         }
@@ -608,6 +610,7 @@ export default {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const batch = pipelineBatches.value.find(b => b.key === batchKey); if (!batch) return;
             const value = doRefs[batchKey]?.value || '';
+            pendingAction.value = 'do_link';
             emit('trigger-event', { name: 'onSetDoLink', event: { value: { batch_key: batchKey, line_ids: batch.items.map(i => i.lineId), do_folder: value } } });
             stopEditing('do', batchKey);
         }
@@ -887,7 +890,8 @@ export default {
                 if (pendingAction.value === 'save' || pendingAction.value === 'submit') opEditMode.value = false;
                 pendingAction.value = null; actionFailed.value = false;
             } else if (newStatus === 'failed') {
-                actionFailedLabel.value = pendingAction.value === 'save' ? 'Save' : pendingAction.value === 'submit' ? 'Submit' : pendingAction.value === 'unsubmit' ? 'Unsubmit' : 'Delete';
+                const labels = { save: 'Save', submit: 'Submit', unsubmit: 'Unsubmit', delete: 'Delete', status: 'Status Update', bd_number: 'Set BD#', do_link: 'Set DO Link' };
+                actionFailedLabel.value = labels[pendingAction.value] || 'Action';
                 pendingAction.value = null; actionFailed.value = true;
             }
         });
