@@ -777,6 +777,7 @@ export default {
 
         // ── Build payload & emit ──
         function genId() { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16); }); }
+        function genOpid() { return 'OP-' + String(Math.floor(100000 + Math.random() * 900000)); }
 
         function buildPayload(action) {
             const h = currentHeader.value;
