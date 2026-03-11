@@ -474,8 +474,9 @@ export default {
         ];
         const custOptions = computed(() => {
             const raw = props.content?.customizationOptions;
+            if (Array.isArray(raw) && raw.length && raw[0].value !== undefined) return raw;
             const src = (Array.isArray(raw) && raw.length) ? raw : DEFAULT_CUST_OPTIONS;
-            return src.map(o => ({ value: o.customization_sku ?? '', label: o.subtype || o.type || 'None' }));
+            return src.map(o => ({ value: o.customization_sku || '', label: o.subtype || o.type || 'None' }));
         });
         const custLabelLookup = computed(() => { const m = {}; for (const o of custOptions.value) m[o.value] = o.label; return m; });
         function custDisplay(val) { if (!val) return 'None'; return custLabelLookup.value[val] || val; }
