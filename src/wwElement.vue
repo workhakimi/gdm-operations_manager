@@ -7,10 +7,19 @@
 
         <!-- ═══ MAIN CONTENT ═══ -->
         <div v-else class="ops-content">
-            <!-- Failed toast -->
+            <!-- Action status bars -->
             <div v-if="actionFailed" class="action-failed-bar" @click="handleRetry">
                 <span class="failed-text">{{ actionFailedLabel }} failed.</span>
                 <span class="failed-retry">Click to retry</span>
+            </div>
+            <div v-if="actionSuccess" class="action-success-bar">
+                <span class="success-text">Action completed successfully.</span>
+            </div>
+
+            <!-- Waiting overlay (blocks all interaction) -->
+            <div v-if="pendingAction" class="action-waiting-overlay">
+                <div class="action-waiting-spinner"></div>
+                <span class="action-waiting-text">Processing...</span>
             </div>
 
             <!-- Header Bar -->
@@ -584,8 +593,7 @@ export default {
         // ── Event handlers ──
         function handleStatusChange(bookingItemId, newStatus) {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
-            pendingAction.value = 'status';
-            emit('trigger-event', { name: 'onUpdateItemStatus', event: { value: { booking_item_id: bookingItemId, new_status: newStatus } } });
+            dispatchAction('status', 'onUpdateItemStatus', { booking_item_id: bookingItemId, new_status: newStatus });
         }
 
         // ── BD# / DO refs ──
@@ -602,16 +610,14 @@ export default {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const batch = pipelineBatches.value.find(b => b.key === batchKey); if (!batch) return;
             const value = bdRefs[batchKey]?.value || '';
-            pendingAction.value = 'bd_number';
-            emit('trigger-event', { name: 'onSetBdNumber', event: { value: { batch_key: batchKey, line_ids: batch.items.map(i => i.lineId), bd_number: value } } });
+            dispatchAction('bd_number', 'onSetBdNumber', { batch_key: batchKey, line_ids: batch.items.map(i => i.lineId), bd_number: value });
             stopEditing('bd', batchKey);
         }
         function handleSetDoLink(batchKey) {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const batch = pipelineBatches.value.find(b => b.key === batchKey); if (!batch) return;
             const value = doRefs[batchKey]?.value || '';
-            pendingAction.value = 'do_link';
-            emit('trigger-event', { name: 'onSetDoLink', event: { value: { batch_key: batchKey, line_ids: batch.items.map(i => i.lineId), do_folder: value } } });
+            dispatchAction('do_link', 'onSetDoLink', { batch_key: batchKey, line_ids: batch.items.map(i => i.lineId), do_folder: value });
             stopEditing('do', batchKey);
         }
 
@@ -853,47 +859,81 @@ export default {
         function handleSaveOrderPlan() {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const payload = buildPayload('save_draft');
-            pendingAction.value = 'save';
-            emit('trigger-event', { name: 'onSaveOrderPlan', event: { value: payload } });
+            dispatchAction('save', 'onSaveOrderPlan', payload);
         }
 
         function handleSubmitOrderPlan() {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const payload = buildPayload('request_process');
-            pendingAction.value = 'submit';
-            emit('trigger-event', { name: 'onSubmitOrderPlan', event: { value: payload } });
+            dispatchAction('submit', 'onSubmitOrderPlan', payload);
         }
 
         function handleDeleteOrderPlan() {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const h = currentHeader.value;
-            pendingAction.value = 'delete';
-            emit('trigger-event', { name: 'onDeleteOrderPlan', event: { value: { headerId: h?.id || null, opid: h?.opid || null } } });
+            dispatchAction('delete', 'onDeleteOrderPlan', { headerId: h?.id || null, opid: h?.opid || null });
         }
 
         function handleUnsubmitOrderPlan() {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const h = currentHeader.value;
-            pendingAction.value = 'unsubmit';
-            emit('trigger-event', { name: 'onUnsubmitOrderPlan', event: { value: { headerId: h?.id || null, opid: h?.opid || null, status: 'Draft' } } });
+            dispatchAction('unsubmit', 'onUnsubmitOrderPlan', { headerId: h?.id || null, opid: h?.opid || null, status: 'Draft' });
         }
 
         // ── Action tracking ──
+        const ACTION_LABELS = { save: 'Save', submit: 'Submit', unsubmit: 'Unsubmit', delete: 'Delete', status: 'Status Update', bd_number: 'Set BD#', do_link: 'Set DO Link' };
+        const ACTION_TIMEOUT = 7000;
         const pendingAction = ref(null);
         const actionFailed = ref(false);
+        const actionSuccess = ref(false);
         const actionFailedLabel = ref('');
+        let _lastEvent = null;
+        let _actionTimer = null;
 
-        function handleRetry() { actionFailed.value = false; pendingAction.value = null; }
+        function startActionTimer() {
+            clearActionTimer();
+            _actionTimer = setTimeout(() => {
+                if (pendingAction.value) {
+                    actionFailedLabel.value = ACTION_LABELS[pendingAction.value] || 'Action';
+                    pendingAction.value = null;
+                    actionFailed.value = true;
+                }
+            }, ACTION_TIMEOUT);
+        }
+        function clearActionTimer() { if (_actionTimer) { clearTimeout(_actionTimer); _actionTimer = null; } }
+
+        function dispatchAction(actionKey, eventName, eventPayload) {
+            pendingAction.value = actionKey;
+            actionFailed.value = false;
+            actionSuccess.value = false;
+            _lastEvent = { name: eventName, event: { value: eventPayload } };
+            emit('trigger-event', _lastEvent);
+            startActionTimer();
+        }
+
+        function handleRetry() {
+            if (!_lastEvent) { actionFailed.value = false; return; }
+            actionFailed.value = false;
+            const keyMap = { onSaveOrderPlan: 'save', onSubmitOrderPlan: 'submit', onDeleteOrderPlan: 'delete', onUnsubmitOrderPlan: 'unsubmit', onUpdateItemStatus: 'status', onSetBdNumber: 'bd_number', onSetDoLink: 'do_link' };
+            pendingAction.value = keyMap[_lastEvent.name] || 'action';
+            emit('trigger-event', _lastEvent);
+            startActionTimer();
+        }
 
         watch(actionStatus, (newStatus) => {
             if (!pendingAction.value) return;
             if (newStatus === 'successful') {
+                clearActionTimer();
                 if (pendingAction.value === 'save' || pendingAction.value === 'submit') opEditMode.value = false;
-                pendingAction.value = null; actionFailed.value = false;
+                pendingAction.value = null;
+                actionFailed.value = false;
+                actionSuccess.value = true;
+                setTimeout(() => { actionSuccess.value = false; }, 2000);
             } else if (newStatus === 'failed') {
-                const labels = { save: 'Save', submit: 'Submit', unsubmit: 'Unsubmit', delete: 'Delete', status: 'Status Update', bd_number: 'Set BD#', do_link: 'Set DO Link' };
-                actionFailedLabel.value = labels[pendingAction.value] || 'Action';
-                pendingAction.value = null; actionFailed.value = true;
+                clearActionTimer();
+                actionFailedLabel.value = ACTION_LABELS[pendingAction.value] || 'Action';
+                pendingAction.value = null;
+                actionFailed.value = true;
             }
         });
 
@@ -925,7 +965,7 @@ export default {
             getTeammateName, formatDate, statusKey, laborDisplay,
             handleStatusChange, handleSetBdNumber, handleSetDoLink,
             setBdRef, setDoRef, isEditing, startEditing, stopEditing,
-            handleRetry, pendingAction, actionFailed, actionFailedLabel,
+            handleRetry, pendingAction, actionFailed, actionSuccess, actionFailedLabel,
             // Order Plan Edit
             opEditMode, form, formDeliveries, formAttachedBookingIds, formAllocations,
             showBookingDropdown, bookingSearch, custOptions, labOptions, custDisplay,
@@ -977,6 +1017,21 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .action-failed-bar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: $red-50; border-bottom: 1px solid rgba($red, 0.15); cursor: pointer; }
 .failed-text { font-size: 12px; font-weight: 600; color: $red-dark; }
 .failed-retry { font-size: 11px; color: $red; text-decoration: underline; margin-left: auto; }
+.action-success-bar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: $green-50; border-bottom: 1px solid rgba($green, 0.15); }
+.success-text { font-size: 12px; font-weight: 600; color: $green; }
+
+/* ═══ WAITING OVERLAY ═══ */
+.action-waiting-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 50;
+    background: rgba(255,255,255,0.7); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 10px;
+}
+.action-waiting-spinner {
+    width: 24px; height: 24px; border: 3px solid $gray-200; border-top-color: $blue;
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.action-waiting-text { font-size: 12px; font-weight: 600; color: $gray-500; }
 
 /* ═══ HEADER BAR ═══ */
 .header-bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #1e293b; color: $white; }
@@ -987,7 +1042,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .status--submitted { background: $blue-50; color: $blue; }
 
 /* ═══ CONTENT ═══ */
-.ops-content { display: flex; flex-direction: column; width: 100%; max-width: 1200px; margin: 0 auto; }
+.ops-content { display: flex; flex-direction: column; width: 100%; max-width: 1200px; margin: 0 auto; position: relative; }
 .view-content { display: flex; flex-direction: column; gap: 0; }
 
 /* ═══ SECTIONS ═══ */
