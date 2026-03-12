@@ -1,5 +1,5 @@
 <template>
-    <div class="ops-manager" :style="{ '--c-batch-sep': content.colorBatchSeparator, '--c-th-bg': content.colorTableHeaderBg, '--c-confirm-bg': content.colorConfirmBtnBg }">
+    <div class="ops-manager" :style="{ '--c-batch-sep': content.colorBatchSeparator, '--c-th-bg': content.colorTableHeaderBg, '--c-confirm-bg': content.colorConfirmBtnBg }" @click.capture="confirmAction && !$event.target.closest('.btn-action') ? confirmAction = null : null">
         <!-- ═══ EMPTY STATE ═══ -->
         <div v-if="!currentHeader" class="empty-state">
             <p class="empty-text">Select an order plan to view operations.</p>
@@ -118,23 +118,23 @@
             <!-- ═══ ORDER PLAN VIEW (INTERACTIVE EDITOR) ═══ -->
             <div v-if="activeView === 'orderplan'" class="view-content">
                 <!-- Edit bar -->
-                <div class="edit-bar">
+                <div class="edit-bar" @click.self="confirmAction = null">
                     <template v-if="!opEditMode">
                         <template v-if="(currentHeader.status || '').toLowerCase() !== 'submitted'">
                             <button type="button" class="btn-action btn-action--primary" @click="enterEditMode">Edit Order Plan</button>
-                            <button v-if="canSubmit" type="button" class="btn-action btn-action--submit" @click="handleSubmitOrderPlan">Submit</button>
+                            <button v-if="canSubmit" type="button" class="btn-action" :class="confirmAction === 'submit' ? 'btn-action--confirm' : 'btn-action--submit'" @click="confirmOrDo('submit', handleSubmitOrderPlan)">{{ confirmAction === 'submit' ? 'Confirm Submit?' : 'Submit' }}</button>
                             <span v-else class="submitted-notice">Please complete the order plan to submit for processing.</span>
                         </template>
                         <template v-else>
                             <button type="button" class="btn-action btn-action--primary" @click="enterEditMode">Edit Order Plan</button>
-                            <button type="button" class="btn-action btn-action--dark" @click="handleUnsubmitOrderPlan">Unsubmit</button>
+                            <button type="button" class="btn-action" :class="confirmAction === 'unsubmit' ? 'btn-action--confirm' : 'btn-action--dark'" @click="confirmOrDo('unsubmit', handleUnsubmitOrderPlan)">{{ confirmAction === 'unsubmit' ? 'Confirm Unsubmit?' : 'Unsubmit' }}</button>
                         </template>
                     </template>
                     <template v-else>
                         <button type="button" class="btn-action btn-action--muted" @click="cancelEditMode">Cancel</button>
-                        <button v-if="canSaveForm" type="button" class="btn-action btn-action--primary" @click="handleSaveOrderPlan">Update</button>
+                        <button v-if="canSaveForm" type="button" class="btn-action" :class="confirmAction === 'update' ? 'btn-action--confirm' : 'btn-action--primary'" @click="confirmOrDo('update', handleSaveOrderPlan)">{{ confirmAction === 'update' ? 'Confirm Update?' : 'Update' }}</button>
                         <span v-else class="submitted-notice">Fill in all required fields to update.</span>
-                        <button type="button" class="btn-action btn-action--danger" @click="handleDeleteOrderPlan">Delete</button>
+                        <button type="button" class="btn-action" :class="confirmAction === 'delete' ? 'btn-action--confirm' : 'btn-action--danger'" @click="confirmOrDo('delete', handleDeleteOrderPlan)">{{ confirmAction === 'delete' ? 'Confirm Delete?' : 'Delete' }}</button>
                     </template>
                 </div>
 
@@ -364,8 +364,8 @@
 
             <!-- ═══ PIPELINE MANAGER VIEW ═══ -->
             <div v-if="activeView === 'pipeline'" class="view-content">
-                <div v-if="(currentHeader.status || '').toLowerCase() === 'submitted'" class="edit-bar">
-                    <button type="button" class="btn-action btn-action--dark" @click="handleUnsubmitOrderPlan">Unsubmit to Draft</button>
+                <div v-if="(currentHeader.status || '').toLowerCase() === 'submitted'" class="edit-bar" @click.self="confirmAction = null">
+                    <button type="button" class="btn-action" :class="confirmAction === 'unsubmit' ? 'btn-action--confirm' : 'btn-action--dark'" @click="confirmOrDo('unsubmit', handleUnsubmitOrderPlan)">{{ confirmAction === 'unsubmit' ? 'Confirm Unsubmit?' : 'Unsubmit to Draft' }}</button>
                 </div>
                 <section class="section">
                     <h3 class="section-heading">Order Pipeline <span class="count-badge">{{ pipelineBatches.length }} batches</span></h3>
@@ -671,6 +671,13 @@ export default {
 
         // ── View toggle ──
         const activeView = ref('pipeline');
+
+        // ── Confirm action ──
+        const confirmAction = ref(null);
+        function confirmOrDo(action, fn) {
+            if (confirmAction.value === action) { confirmAction.value = null; fn(); }
+            else { confirmAction.value = action; }
+        }
 
         // ── Helpers ──
         function getTeammateName(id) { return teammateLookup.value[id]?.name || ''; }
@@ -1070,7 +1077,7 @@ export default {
         return {
             currentHeader, currentDeliveries, attachedBookings, resolvedTeammates,
             resolvedLines, linesForDelivery, unassignedLines, isSplit, canSubmit, canSaveForm, pipelineBatches, pipelineDeliveryGroups,
-            activeView,
+            activeView, confirmAction, confirmOrDo,
             getTeammateName, formatDate, statusKey, laborDisplay,
             handleStatusChange, handleSetBdNumber, handleSetDoLink,
             setBdRef, setDoRef, isEditing, startEditing, stopEditing,
@@ -1419,4 +1426,5 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .submitted-notice { font-size: 12px; color: $gray-500; font-style: italic; }
 .req { color: #ef4444; font-weight: 700; margin-left: 2px; }
 .pipe-card--warn { border: 1px solid #fca5a5; }
+.btn-action--confirm { background: $amber; color: $white; &:hover { background: darken($amber, 8%); } }
 </style>
