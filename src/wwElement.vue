@@ -281,13 +281,15 @@
                         <div class="connect-booking-wrap">
                             <button type="button" class="btn-add" @click="showBookingDropdown = !showBookingDropdown">+ Connect Booking</button>
                             <div v-if="showBookingDropdown" class="booking-dropdown">
-                                <input type="text" class="edit-input" v-model="bookingSearch" placeholder="Search bookings..." style="margin-bottom:6px" />
-                                <div v-for="bh in filteredBookingsForConnect" :key="bh.id" class="bk-option" :class="{ 'bk-option--attached': isBookingAttached(bh.id) }" @click="!isBookingAttached(bh.id) && attachFormBooking(bh)">
-                                    <span class="cell-mono">{{ bh.bookingnumber }}</span>
-                                    <span>{{ bh.bookingtitle || '' }}</span>
-                                    <span v-if="isBookingAttached(bh.id)" class="bk-attached-label">Attached</span>
+                                <div class="booking-dropdown-search"><input type="text" class="edit-input" v-model="bookingSearch" placeholder="Search bookings..." /></div>
+                                <div class="booking-dropdown-list">
+                                    <div v-for="bh in filteredBookingsForConnect" :key="bh.id" class="bk-option" :class="{ 'bk-option--attached': isBookingAttached(bh.id) }" @click="!isBookingAttached(bh.id) && attachFormBooking(bh)">
+                                        <span class="cell-mono">{{ bh.bookingnumber }}</span>
+                                        <span>{{ bh.bookingtitle || '' }}</span>
+                                        <span v-if="isBookingAttached(bh.id)" class="bk-attached-label">Attached</span>
+                                    </div>
+                                    <div v-if="filteredBookingsForConnect.length === 0" class="cell-muted" style="padding:8px;text-align:center">No bookings found</div>
                                 </div>
-                                <div v-if="filteredBookingsForConnect.length === 0" class="cell-muted" style="padding:8px;text-align:center">No bookings found</div>
                             </div>
                         </div>
                     </h3>
@@ -1283,8 +1285,10 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .booking-dropdown {
     position: absolute; top: 100%; right: 0; z-index: 20; width: 320px;
     background: $white; border: 1px solid $gray-200; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    padding: 8px; max-height: 260px; overflow-y: auto;
+    display: flex; flex-direction: column; max-height: 260px;
 }
+.booking-dropdown-search { padding: 8px 8px 6px; flex-shrink: 0; position: sticky; top: 0; background: $white; z-index: 1; }
+.booking-dropdown-list { overflow-y: auto; padding: 0 8px 8px; flex: 1; }
 .bk-option {
     display: flex; align-items: center; gap: 8px; padding: 6px 8px; font-size: 11px; cursor: pointer;
     &:hover { background: $gray-50; }
