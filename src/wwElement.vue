@@ -805,6 +805,8 @@ export default {
                     mockup_link: line.mockup_link || '',
                     labor: line.labor || '',
                     splitgroupid: line.splitgroupid || '',
+                    bd_number: line.bd_number || '',
+                    do_folder: line.do_folder || '',
                 });
             }
 
@@ -957,6 +959,8 @@ export default {
                         splitgroupid: alloc.splitgroupid || null,
                         mockup_link: alloc.mockup_link || null,
                         labor: alloc.labor || null,
+                        bd_number: alloc.bd_number || null,
+                        do_folder: alloc.do_folder || null,
                     });
                 }
             }
