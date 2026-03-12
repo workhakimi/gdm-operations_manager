@@ -137,6 +137,11 @@
                     </template>
                 </div>
 
+                <!-- BD Number warning -->
+                <div v-if="opEditMode && hasBdNumbers" class="bd-warn-banner">
+                    <strong>Warning:</strong> Some batches have BD numbers assigned. Updating this order plan will require re-setting BD numbers in the Pipeline Manager.
+                </div>
+
                 <!-- Editable Metadata (shown in edit mode) -->
                 <section v-if="opEditMode" class="section">
                     <h3 class="section-heading">Edit Metadata</h3>
@@ -749,6 +754,8 @@ export default {
         // ═══════════════════════════════════════════════════════════════════
         // ═══ ORDER PLAN EDIT MODE ═══
         // ═══════════════════════════════════════════════════════════════════
+        const hasBdNumbers = computed(() => resolvedLines.value.some(l => l.bd_number));
+
         const opEditMode = ref(false);
         const form = reactive({ title: '', quoteref: '', invoiceref: '', pic_bda: '', pic_ops: '' });
         const formDeliveries = ref([]);
@@ -1092,7 +1099,7 @@ export default {
             setBdRef, setDoRef, isEditing, startEditing, stopEditing,
             handleRetry, handleUnsetBdNumber, handleUnsetDoLink, pendingAction, actionFailed, actionSuccess, actionFailedLabel,
             // Order Plan Edit
-            opEditMode, form, formDeliveries, formAttachedBookingIds, formAllocations,
+            hasBdNumbers, opEditMode, form, formDeliveries, formAttachedBookingIds, formAllocations,
             showBookingDropdown, bookingSearch, custOptions, labOptions, custDisplay,
             enterEditMode, cancelEditMode, addFormDelivery, removeFormDelivery,
             filteredBookingsForConnect, isBookingAttached, attachFormBooking, detachFormBooking,
@@ -1436,6 +1443,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 /* ═══ VALIDATION INDICATORS ═══ */
 .submitted-notice { font-size: 12px; color: $gray-500; font-style: italic; }
 .req { color: #ef4444; font-weight: 700; margin-left: 2px; }
+.bd-warn-banner { background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; padding: 8px 12px; border-radius: 4px; font-size: 12px; margin-bottom: 8px; }
 .pipe-card--warn { border: 1px solid #fca5a5; }
 .btn-action--confirm { background: $amber; color: $white; &:hover { background: darken($amber, 8%); } }
 </style>
