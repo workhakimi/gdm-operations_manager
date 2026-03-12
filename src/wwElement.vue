@@ -411,13 +411,13 @@
                                         <tr v-if="batch.bd_number && jobsByBd[batch.bd_number]" class="batch-tl-row">
                                             <td colspan="9" class="batch-tl-cell">
                                                 <div class="batch-tl-track">
-                                                    <div v-for="(step, i) in JOB_STAGES" :key="step.key" class="batch-tl-step" :class="'batch-tl--' + getJobStageState(jobsByBd[batch.bd_number], i)">
+                                                    <div v-for="(step, si) in JOB_STAGES" :key="step.key" class="batch-tl-step" :class="'batch-tl--' + getJobStageState(jobsByBd[batch.bd_number], si)">
                                                         <div class="batch-tl-bar">
                                                             <div class="batch-tl-dot"></div>
-                                                            <div v-if="i < JOB_STAGES.length - 1" class="batch-tl-line" :class="{ 'batch-tl-line--done': ['done','warn','current'].includes(getJobStageState(jobsByBd[batch.bd_number], i)) }"></div>
+                                                            <div v-if="si < JOB_STAGES.length - 1" class="batch-tl-line" :class="{ 'batch-tl-line--done': isLineDone(jobsByBd[batch.bd_number], si) }"></div>
                                                         </div>
-                                                        <span class="batch-tl-label">{{ getJobStageLabel(jobsByBd[batch.bd_number], i) }}</span>
-                                                        <span v-if="getJobStageDate(jobsByBd[batch.bd_number], i)" class="batch-tl-date">{{ getJobStageDate(jobsByBd[batch.bd_number], i) }}</span>
+                                                        <span class="batch-tl-label">{{ getJobStageLabel(jobsByBd[batch.bd_number], si) }}</span>
+                                                        <span v-if="getJobStageDate(jobsByBd[batch.bd_number], si)" class="batch-tl-date">{{ getJobStageDate(jobsByBd[batch.bd_number], si) }}</span>
                                                     </div>
                                                 </div>
                                             </td>
@@ -630,6 +630,7 @@ export default {
             if (step.key === 'checkout') return _fmtShort(j.checkout_date) || '';
             return '';
         }
+        function isLineDone(j, i) { var s = getJobStageState(j, i); return s === 'done' || s === 'warn' || s === 'current'; }
 
         // ── Current order plan data ──
         const currentHeader = computed(() => resolvedOpHeaders.value.find(h => h.id === selectedId.value) || null);
@@ -1171,7 +1172,7 @@ export default {
         return {
             currentHeader, currentDeliveries, attachedBookings, resolvedTeammates,
             resolvedLines, linesForDelivery, unassignedLines, isSplit, canSubmit, canSaveForm, pipelineBatches, pipelineDeliveryGroups,
-            jobsByBd, JOB_STAGES, getJobStageState, getJobStageLabel, getJobStageDate,
+            jobsByBd, JOB_STAGES, getJobStageState, getJobStageLabel, getJobStageDate, isLineDone,
             activeView, confirmAction, confirmOrDo,
             getTeammateName, formatDate, statusKey, laborDisplay,
             handleStatusChange, handleSetBdNumber, handleSetDoLink,
@@ -1525,8 +1526,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .bd-warn-banner { background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; padding: 8px 12px; border-radius: 4px; font-size: 12px; margin-bottom: 8px; }
 
 // ─── Batch Timeline ───
-.batch-tl-row td { background: $gray-50; border-bottom: 1px solid $gray-200; padding: 0; }
-.batch-tl-cell { padding: 6px 12px 8px !important; }
+.batch-tl-row td.batch-tl-cell { background: $gray-50; border-bottom: 1px solid $gray-200; padding: 6px 12px 8px; }
 .batch-tl-track { display: flex; align-items: stretch; gap: 0; }
 .batch-tl-step { display: flex; flex-direction: column; align-items: flex-start; flex: 1; min-width: 0; padding: 2px 4px; }
 .batch-tl-bar { display: flex; align-items: center; width: 100%; height: 10px; }
@@ -1539,7 +1539,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .batch-tl--done .batch-tl-label { color: $green; }
 .batch-tl--warn .batch-tl-dot { background: $amber; border-color: $amber; }
 .batch-tl--warn .batch-tl-label { color: $amber; font-weight: 700; }
-.batch-tl--active .batch-tl-dot { background: $white; border-color: $blue; box-shadow: 0 0 0 2px rgba($blue, 0.2); }
+.batch-tl--active .batch-tl-dot { background: $white; border-color: $blue; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
 .batch-tl--active .batch-tl-label { color: $blue; font-weight: 700; }
 .batch-tl--current .batch-tl-dot { background: $gray-800; border-color: $gray-800; }
 .batch-tl--current .batch-tl-label { color: $gray-800; font-weight: 600; }
