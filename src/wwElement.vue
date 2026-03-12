@@ -408,20 +408,6 @@
                                 <tbody>
                                     <template v-for="batch in group.batches" :key="batch.key">
                                         <tr class="batch-header-row"><td colspan="9"><span class="batch-type-tag">{{ batch.customizationType }}</span></td></tr>
-                                        <tr v-if="batch.bd_number && jobsByBd[batch.bd_number]" class="batch-tl-row">
-                                            <td colspan="9" class="batch-tl-cell">
-                                                <div class="batch-tl-track">
-                                                    <div v-for="(step, si) in JOB_STAGES" :key="step.key" class="batch-tl-step" :class="'batch-tl--' + getJobStageState(jobsByBd[batch.bd_number], si)">
-                                                        <div class="batch-tl-bar">
-                                                            <div class="batch-tl-dot"></div>
-                                                            <div v-if="si < JOB_STAGES.length - 1" class="batch-tl-line" :class="{ 'batch-tl-line--done': isLineDone(jobsByBd[batch.bd_number], si) }"></div>
-                                                        </div>
-                                                        <span class="batch-tl-label">{{ getJobStageLabel(jobsByBd[batch.bd_number], si) }}</span>
-                                                        <span v-if="getJobStageDate(jobsByBd[batch.bd_number], si)" class="batch-tl-date">{{ getJobStageDate(jobsByBd[batch.bd_number], si) }}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
                                         <tr v-for="(item, itemIdx) in batch.items" :key="item.lineId" :class="{ 'batch-first': itemIdx === 0 }">
                                             <td class="cell-img"><img v-if="item.imagelink" :src="item.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
                                             <td class="cell-mono">{{ item.sku }}</td>
@@ -523,7 +509,6 @@ export default {
         const resolvedBookingItems = computed(() => wwLib.wwUtils.getDataFromCollection(props.content?.bookingItems) || []);
         const resolvedInventoryData = computed(() => wwLib.wwUtils.getDataFromCollection(props.content?.inventoryData) || []);
         const resolvedTeammates = computed(() => wwLib.wwUtils.getDataFromCollection(props.content?.teammatesList) || []);
-        const resolvedJobs = computed(() => wwLib.wwUtils.getDataFromCollection(props.content?.jobsData) || []);
 
         const selectedId = computed(() => props.content?.selectedOrderPlanId || '');
         const actionStatus = computed(() => {
@@ -567,70 +552,6 @@ export default {
         const bookingItemLookup = computed(() => { const m = {}; for (const i of resolvedBookingItems.value) m[i.id] = i; return m; });
         const bookingItemsByHeader = computed(() => { const m = {}; for (const i of resolvedBookingItems.value) { if (!m[i.headerid]) m[i.headerid] = []; m[i.headerid].push(i); } return m; });
         const deliveryLookup = computed(() => { const m = {}; for (const d of resolvedOpDeliveries.value) m[d.id] = d; return m; });
-
-        // ── Production jobs by BD number ──
-        const jobsByBd = computed(() => { const m = {}; for (const j of resolvedJobs.value) { if (j.bd_number) m[j.bd_number] = j; } return m; });
-
-        const JOB_STAGES = [
-            { key: 'created', done: 'Created', pending: 'Created' },
-            { key: 'connected', done: 'Connected', pending: 'Pending Connection', warn: 'Connection Lost' },
-            { key: 'arrived', done: 'Arrival Set', pending: 'Pending Arrival' },
-            { key: 'started', done: 'In Progress', pending: 'Pending Start' },
-            { key: 'completed', done: 'Job Ended', pending: 'Pending Completion' },
-            { key: 'checkout', done: 'Checked Out', pending: 'Pending Checkout' },
-        ];
-        function _today() { const d = new Date(); return d.toISOString().slice(0, 10); }
-        function _fmtShort(str) { if (!str) return ''; const d = new Date(str); if (isNaN(d.getTime())) return ''; const ms = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return `${d.getDate()} ${ms[d.getMonth()]} ${d.getFullYear()}`; }
-        function getJobStageIdx(j) {
-            if (!j) return -1;
-            if (j.checkout_date) return 6;
-            const endHasTime = j.endDate && j.endDate.includes('T');
-            const ep = j.endDate ? j.endDate.split('T')[0] : '';
-            const dp = j.endDate_delay ? j.endDate_delay.split('T')[0] : '';
-            const effectiveEnd = dp || ep;
-            if (endHasTime) return 5;
-            if (effectiveEnd && _today() > effectiveEnd) return 5;
-            const sp = j.startDate ? j.startDate.split('T')[0] : '';
-            if (sp && _today() >= sp) return 3;
-            if (j.arrival_date) return 3;
-            if (j.bd_number) return 2;
-            return 1;
-        }
-        function getJobStageState(j, i) {
-            const si = getJobStageIdx(j);
-            const step = JOB_STAGES[i];
-            if (i > si) return 'pending';
-            if (i === si) return 'active';
-            if (step.key === 'connected') return j.bd_number ? 'done' : 'warn';
-            if (step.key === 'arrived') return j.arrival_date ? 'done' : 'warn';
-            if (step.key === 'started') { const sp = j.startDate ? j.startDate.split('T')[0] : ''; return (sp && _today() >= sp) ? 'done' : 'current'; }
-            if (step.key === 'completed') { const ep = j.endDate ? j.endDate.split('T')[0] : ''; const dp = j.endDate_delay ? j.endDate_delay.split('T')[0] : ''; const ee = dp || ep; if (j.endDate && j.endDate.includes('T')) return 'done'; if (ee && _today() > ee) return 'done'; return 'current'; }
-            return 'done';
-        }
-        function getJobStageLabel(j, i) {
-            const state = getJobStageState(j, i);
-            const step = JOB_STAGES[i];
-            if (state === 'warn') return step.warn || step.pending;
-            if (state === 'done') return step.done;
-            if (state === 'active') return step.pending;
-            if (state === 'current') return step.done;
-            return step.pending;
-        }
-        function getJobStageDate(j, i) {
-            if (!j) return '';
-            const step = JOB_STAGES[i];
-            if (step.key === 'created') return _fmtShort(j.created_at) || '';
-            if (step.key === 'connected') return j.bd_number || '';
-            if (step.key === 'arrived') return _fmtShort(j.arrival_date) || '';
-            if (step.key === 'started') return _fmtShort(j.startDate) || '';
-            if (step.key === 'completed') {
-                if (j.endDate_delay) return 'Delayed: ' + (_fmtShort((j.endDate_delay || '').split('T')[0]) || '');
-                return _fmtShort((j.endDate || '').split('T')[0]) || '';
-            }
-            if (step.key === 'checkout') return _fmtShort(j.checkout_date) || '';
-            return '';
-        }
-        function isLineDone(j, i) { var s = getJobStageState(j, i); return s === 'done' || s === 'warn' || s === 'current'; }
 
         // ── Current order plan data ──
         const currentHeader = computed(() => resolvedOpHeaders.value.find(h => h.id === selectedId.value) || null);
@@ -1172,7 +1093,6 @@ export default {
         return {
             currentHeader, currentDeliveries, attachedBookings, resolvedTeammates,
             resolvedLines, linesForDelivery, unassignedLines, isSplit, canSubmit, canSaveForm, pipelineBatches, pipelineDeliveryGroups,
-            jobsByBd, JOB_STAGES, getJobStageState, getJobStageLabel, getJobStageDate, isLineDone,
             activeView, confirmAction, confirmOrDo,
             getTeammateName, formatDate, statusKey, laborDisplay,
             handleStatusChange, handleSetBdNumber, handleSetDoLink,
@@ -1524,26 +1444,6 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .submitted-notice { font-size: 12px; color: $gray-500; font-style: italic; }
 .req { color: #ef4444; font-weight: 700; margin-left: 2px; }
 .bd-warn-banner { background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; padding: 8px 12px; border-radius: 4px; font-size: 12px; margin-bottom: 8px; }
-
-// ─── Batch Timeline ───
-.batch-tl-row td.batch-tl-cell { background: $gray-50; border-bottom: 1px solid $gray-200; padding: 6px 12px 8px; }
-.batch-tl-track { display: flex; align-items: stretch; gap: 0; }
-.batch-tl-step { display: flex; flex-direction: column; align-items: flex-start; flex: 1; min-width: 0; padding: 2px 4px; }
-.batch-tl-bar { display: flex; align-items: center; width: 100%; height: 10px; }
-.batch-tl-dot { width: 8px; height: 8px; border-radius: 50%; background: $gray-300; border: 1.5px solid $gray-300; flex-shrink: 0; z-index: 2; transition: background 0.2s, border-color 0.2s; }
-.batch-tl-line { flex: 1; height: 1.5px; background: $gray-300; transition: background 0.2s; }
-.batch-tl-line--done { background: $gray-900; }
-.batch-tl-label { font-size: 7px; font-weight: 600; color: $gray-400; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.03em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
-.batch-tl-date { font-size: 8px; font-weight: 700; color: $gray-700; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
-.batch-tl--done .batch-tl-dot { background: $green; border-color: $green; }
-.batch-tl--done .batch-tl-label { color: $green; }
-.batch-tl--warn .batch-tl-dot { background: $amber; border-color: $amber; }
-.batch-tl--warn .batch-tl-label { color: $amber; font-weight: 700; }
-.batch-tl--active .batch-tl-dot { background: $white; border-color: $blue; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
-.batch-tl--active .batch-tl-label { color: $blue; font-weight: 700; }
-.batch-tl--current .batch-tl-dot { background: $gray-800; border-color: $gray-800; }
-.batch-tl--current .batch-tl-label { color: $gray-800; font-weight: 600; }
-.batch-tl--pending .batch-tl-dot { background: $gray-300; border-color: $gray-300; }
 .pipe-card--warn { border: 1px solid #fca5a5; }
 .btn-action--confirm { background: $amber; color: $white; &:hover { background: darken($amber, 8%); } }
 </style>

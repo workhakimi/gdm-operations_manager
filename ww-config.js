@@ -24,11 +24,6 @@ export default {
                 properties: ['bookingHeaders', 'bookingItems'],
             },
             {
-                label: 'Production Calendar',
-                isCollapsible: true,
-                properties: ['jobsData'],
-            },
-            {
                 label: 'Reference Data',
                 isCollapsible: true,
                 properties: ['inventoryData', 'teammatesList', 'customizationOptions', 'laborOptions'],
@@ -222,19 +217,6 @@ export default {
             bindingValidation: {
                 type: 'array',
                 tooltip: 'Array of booking_items: { id, headerid, sku, quantity, status, balanceref, indicator }',
-            },
-            /* wwEditor:end */
-        },
-        jobsData: {
-            label: { en: 'Production Jobs' },
-            type: 'ObjectList',
-            section: 'settings',
-            bindable: true,
-            defaultValue: [],
-            /* wwEditor:start */
-            bindingValidation: {
-                type: 'array',
-                tooltip: 'Array of production calendar jobs: { id, title, type, quantity, startDate, endDate, endDate_delay, delay_reason, bd_number, pic_id, created_at, arrival_date, checkout_date }',
             },
             /* wwEditor:end */
         },
