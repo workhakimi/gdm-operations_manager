@@ -34,11 +34,11 @@
                 <h3 class="section-heading">Order Metadata</h3>
                 <table class="meta-table">
                     <tbody>
-                        <tr><td class="meta-label">Title</td><td>{{ currentHeader.title || '-' }}</td></tr>
-                        <tr><td class="meta-label">Quote Ref</td><td>{{ currentHeader.quoteref || '-' }}</td></tr>
-                        <tr><td class="meta-label">Invoice Ref</td><td>{{ currentHeader.invoiceref || '-' }}</td></tr>
-                        <tr><td class="meta-label">PIC (BDA)</td><td>{{ getTeammateName(currentHeader.pic_bda) || 'Not assigned' }}</td></tr>
-                        <tr><td class="meta-label">PIC (OPS)</td><td>{{ getTeammateName(currentHeader.pic_ops) || 'Not assigned' }}</td></tr>
+                        <tr><td class="meta-label">Title<span v-if="!currentHeader.title" class="req">*</span></td><td>{{ currentHeader.title || '-' }}</td></tr>
+                        <tr><td class="meta-label">Quote Ref<span v-if="!currentHeader.quoteref" class="req">*</span></td><td>{{ currentHeader.quoteref || '-' }}</td></tr>
+                        <tr><td class="meta-label">Invoice Ref<span v-if="!currentHeader.invoiceref" class="req">*</span></td><td>{{ currentHeader.invoiceref || '-' }}</td></tr>
+                        <tr><td class="meta-label">PIC (BDA)<span v-if="!currentHeader.pic_bda" class="req">*</span></td><td>{{ getTeammateName(currentHeader.pic_bda) || 'Not assigned' }}</td></tr>
+                        <tr><td class="meta-label">PIC (OPS)<span v-if="!currentHeader.pic_ops" class="req">*</span></td><td>{{ getTeammateName(currentHeader.pic_ops) || 'Not assigned' }}</td></tr>
                         <tr><td class="meta-label">Status</td><td>{{ currentHeader.status || 'Draft' }}</td></tr>
                         <tr><td class="meta-label">Created</td><td>{{ formatDate(currentHeader.created_at) }}</td></tr>
                         <tr v-if="currentHeader.submitted_at"><td class="meta-label">Submitted</td><td>{{ formatDate(currentHeader.submitted_at) }}</td></tr>
@@ -48,7 +48,7 @@
 
             <!-- Section: Attached Bookings -->
             <section class="section">
-                <h3 class="section-heading">Attached Bookings <span class="count-badge">{{ attachedBookings.length }}</span></h3>
+                <h3 class="section-heading">Attached Bookings <span class="count-badge">{{ attachedBookings.length }}</span><span v-if="attachedBookings.length === 0" class="req">*</span></h3>
                 <div v-if="attachedBookings.length === 0 && !opEditMode" class="empty-section">No bookings attached to this order plan.</div>
 
                 <!-- One card per booking -->
@@ -120,12 +120,20 @@
                 <!-- Edit bar -->
                 <div class="edit-bar">
                     <template v-if="!opEditMode">
-                        <button type="button" class="btn-action btn-action--primary" @click="enterEditMode">Edit Order Plan</button>
-                        <button type="button" class="btn-action btn-action--submit" @click="handleSubmitOrderPlan">Submit</button>
+                        <template v-if="(currentHeader.status || '').toLowerCase() !== 'submitted'">
+                            <button type="button" class="btn-action btn-action--primary" @click="enterEditMode">Edit Order Plan</button>
+                            <button v-if="canSubmit" type="button" class="btn-action btn-action--submit" @click="handleSubmitOrderPlan">Submit</button>
+                            <span v-else class="submitted-notice">Please complete the order plan to submit for processing.</span>
+                        </template>
+                        <template v-else>
+                            <button type="button" class="btn-action btn-action--primary" @click="enterEditMode">Edit Order Plan</button>
+                            <button type="button" class="btn-action btn-action--dark" @click="handleUnsubmitOrderPlan">Unsubmit</button>
+                        </template>
                     </template>
                     <template v-else>
                         <button type="button" class="btn-action btn-action--muted" @click="cancelEditMode">Cancel</button>
-                        <button type="button" class="btn-action btn-action--primary" @click="handleSaveOrderPlan">Save Draft</button>
+                        <button v-if="canSaveForm" type="button" class="btn-action btn-action--primary" @click="handleSaveOrderPlan">Update</button>
+                        <span v-else class="submitted-notice">Fill in all required fields to update.</span>
                         <button type="button" class="btn-action btn-action--danger" @click="handleDeleteOrderPlan">Delete</button>
                     </template>
                 </div>
@@ -135,16 +143,16 @@
                     <h3 class="section-heading">Edit Metadata</h3>
                     <table class="meta-table">
                         <tbody>
-                            <tr><td class="meta-label">Title</td><td><input type="text" class="meta-input" v-model="form.title" placeholder="Order title" /></td></tr>
-                            <tr><td class="meta-label">Quote Ref</td><td><input type="text" class="meta-input" v-model="form.quoteref" placeholder="Q-202X-XXX" /></td></tr>
-                            <tr><td class="meta-label">Invoice Ref</td><td><input type="text" class="meta-input" v-model="form.invoiceref" placeholder="INV-202X-XXX" /></td></tr>
-                            <tr><td class="meta-label">PIC (BDA)</td><td>
+                            <tr><td class="meta-label">Title<span v-if="!form.title" class="req">*</span></td><td><input type="text" class="meta-input" v-model="form.title" placeholder="Order title" /></td></tr>
+                            <tr><td class="meta-label">Quote Ref<span v-if="!form.quoteref" class="req">*</span></td><td><input type="text" class="meta-input" v-model="form.quoteref" placeholder="Q-202X-XXX" /></td></tr>
+                            <tr><td class="meta-label">Invoice Ref<span v-if="!form.invoiceref" class="req">*</span></td><td><input type="text" class="meta-input" v-model="form.invoiceref" placeholder="INV-202X-XXX" /></td></tr>
+                            <tr><td class="meta-label">PIC (BDA)<span v-if="!form.pic_bda" class="req">*</span></td><td>
                                 <select class="meta-select" v-model="form.pic_bda">
                                     <option value="">Not assigned</option>
                                     <option v-for="t in resolvedTeammates" :key="t.id" :value="t.id">{{ t.name }}</option>
                                 </select>
                             </td></tr>
-                            <tr><td class="meta-label">PIC (OPS)</td><td>
+                            <tr><td class="meta-label">PIC (OPS)<span v-if="!form.pic_ops" class="req">*</span></td><td>
                                 <select class="meta-select" v-model="form.pic_ops">
                                     <option value="">Not assigned</option>
                                     <option v-for="t in resolvedTeammates" :key="t.id" :value="t.id">{{ t.name }}</option>
@@ -157,7 +165,7 @@
                 <!-- Delivery Cards -->
                 <section class="section">
                     <h3 class="section-heading">
-                        Delivery Locations <span class="count-badge">{{ opEditMode ? formDeliveries.length : currentDeliveries.length }}</span>
+                        Delivery Locations <span class="count-badge">{{ opEditMode ? formDeliveries.length : currentDeliveries.length }}</span><span v-if="!opEditMode && currentDeliveries.length === 0" class="req">*</span>
                         <button v-if="opEditMode" type="button" class="btn-add" @click="addFormDelivery">+ Add Location</button>
                     </h3>
 
@@ -167,13 +175,13 @@
                         <div v-for="del in currentDeliveries" :key="del.id" class="pipe-card">
                             <div class="pipe-card-header" :style="{ background: content.colorCardHeaderBg, color: content.colorCardHeaderText }">
                                 <div class="pipe-card-header-main">
-                                    <span class="pipe-card-title">{{ del.label || 'Unnamed Location' }}</span>
+                                    <span class="pipe-card-title">{{ del.label || 'Unnamed Location' }}<span v-if="!del.label" class="req">*</span></span>
                                     <span v-if="del.deliverytype" class="pipe-dtype-tag">{{ del.deliverytype }}</span>
                                 </div>
-                                <div v-if="del.address" class="pipe-card-meta">{{ del.address }}</div>
+                                <div class="pipe-card-meta"><span v-if="del.address">{{ del.address }}</span><span v-else class="cell-muted">No address<span class="req">*</span></span></div>
                                 <div class="pipe-card-meta-row">
-                                    <span v-if="del.deadline" class="pipe-card-deadline">Delivery by: {{ formatDate(del.deadline) }}</span>
-                                    <span v-if="del.pic_name" class="pipe-card-contact">{{ del.pic_name }}<span v-if="del.pic_phone"> · {{ del.pic_phone }}</span></span>
+                                    <span v-if="del.deadline" class="pipe-card-deadline">Delivery by: {{ formatDate(del.deadline) }}</span><span v-else class="cell-muted">No deadline<span class="req">*</span></span>
+                                    <span v-if="del.pic_name" class="pipe-card-contact">{{ del.pic_name }}<span v-if="del.pic_phone"> · {{ del.pic_phone }}</span><span v-else><span class="req">*</span></span></span><span v-else class="cell-muted">No contact<span class="req">*</span></span>
                                 </div>
                                 <div v-if="del.remarks" class="pipe-card-remarks">{{ del.remarks }}</div>
                             </div>
@@ -189,7 +197,7 @@
                                             <td class="cell-mono">{{ line._bookingItem?.sku || '-' }}</td>
                                             <td>{{ line._inv?.model || 'Unknown' }}</td>
                                             <td>{{ line._inv?.color || '-' }}</td>
-                                            <td class="col-left cell-mono">{{ line.quantity_assigned }}/{{ line._bookingItem?.quantity || '?' }}</td>
+                                            <td class="col-left cell-mono">{{ line.quantity_assigned }}/{{ line._bookingItem?.quantity || '?' }}<span v-if="!line.quantity_assigned || line.quantity_assigned <= 0" class="req">*</span></td>
                                             <td><span v-if="isSplit(line)" class="split-tag">Split</span><span v-else class="cell-muted">-</span></td>
                                             <td>{{ custDisplay(line.customization) }}</td>
                                             <td>{{ laborDisplay(line.labor) || 'None' }}</td>
@@ -205,6 +213,35 @@
                             </div>
                             <div v-else class="empty-section empty-section--sm">No items allocated to this delivery.</div>
                         </div>
+                        <div v-if="unassignedLines.length > 0" class="pipe-card pipe-card--warn">
+                            <div class="pipe-card-header" style="background:#fef2f2; color:#991b1b;">
+                                <div class="pipe-card-header-main">
+                                    <span class="pipe-card-title">Unassigned Items<span class="req">*</span></span>
+                                    <span class="count-badge">{{ unassignedLines.length }}</span>
+                                </div>
+                                <div class="pipe-card-meta">These items need a delivery destination assigned.</div>
+                            </div>
+                            <div class="table-scroll">
+                                <table class="pipe-table">
+                                    <colgroup>
+                                        <col style="width:32px" /><col style="width:110px" /><col style="width:14%" /><col style="width:70px" /><col style="width:55px" /><col style="width:110px" /><col style="width:80px" /><col style="width:85px" />
+                                    </colgroup>
+                                    <thead><tr><th></th><th>SKU</th><th>Model</th><th>Color</th><th class="col-left">Qty</th><th>Customization</th><th>Labor</th><th>Status</th></tr></thead>
+                                    <tbody>
+                                        <tr v-for="line in unassignedLines" :key="line.id">
+                                            <td class="cell-img"><img v-if="line._inv?.imagelink" :src="line._inv.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
+                                            <td class="cell-mono">{{ line._bookingItem?.sku || '-' }}</td>
+                                            <td>{{ line._inv?.model || 'Unknown' }}</td>
+                                            <td>{{ line._inv?.color || '-' }}</td>
+                                            <td class="col-left cell-mono">{{ line.quantity_assigned }}/{{ line._bookingItem?.quantity || '?' }}</td>
+                                            <td>{{ custDisplay(line.customization) }}</td>
+                                            <td>{{ laborDisplay(line.labor) || 'None' }}</td>
+                                            <td><span class="status-tag" :class="'st--' + statusKey(line._bookingItem?.status)">{{ line._bookingItem?.status || 'Booked' }}</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </template>
 
                     <!-- EDIT MODE: Delivery Cards -->
@@ -213,7 +250,7 @@
                         <div v-for="(fd, fdIdx) in formDeliveries" :key="fd._uid" class="pipe-card">
                             <div class="pipe-card-header" :style="{ background: content.colorCardHeaderBg, color: content.colorCardHeaderText }">
                                 <div class="pipe-card-header-main">
-                                    <input type="text" class="edit-input edit-input--title" v-model="fd.label" placeholder="Location name" />
+                                    <input type="text" class="edit-input edit-input--title" v-model="fd.label" placeholder="Location name" /><span v-if="!fd.label" class="req">*</span>
                                     <select class="edit-select edit-select--sm" v-model="fd.deliverytype">
                                         <option value="Klang Valley">Klang Valley</option>
                                         <option value="West Malaysia">West Malaysia</option>
@@ -226,11 +263,11 @@
                                     </button>
                                 </div>
                                 <div class="edit-grid-3">
-                                    <div class="edit-field"><label class="edit-label">Deadline</label><input type="datetime-local" class="edit-input" v-model="fd.deadline" /></div>
-                                    <div class="edit-field"><label class="edit-label">Contact Name</label><input type="text" class="edit-input" v-model="fd.pic_name" placeholder="Contact name" /></div>
-                                    <div class="edit-field"><label class="edit-label">Phone</label><input type="text" class="edit-input" v-model="fd.pic_phone" placeholder="Phone" /></div>
+                                    <div class="edit-field"><label class="edit-label">Deadline<span v-if="!fd.deadline" class="req">*</span></label><input type="datetime-local" class="edit-input" v-model="fd.deadline" /></div>
+                                    <div class="edit-field"><label class="edit-label">Contact Name<span v-if="!fd.pic_name" class="req">*</span></label><input type="text" class="edit-input" v-model="fd.pic_name" placeholder="Contact name" /></div>
+                                    <div class="edit-field"><label class="edit-label">Phone<span v-if="!fd.pic_phone" class="req">*</span></label><input type="text" class="edit-input" v-model="fd.pic_phone" placeholder="Phone" /></div>
                                 </div>
-                                <div class="edit-field" style="margin-top:6px"><label class="edit-label">Address</label><textarea class="edit-textarea" v-model="fd.address" placeholder="Delivery address" rows="2" style="margin-top:0"></textarea></div>
+                                <div class="edit-field" style="margin-top:6px"><label class="edit-label">Address<span v-if="!fd.address" class="req">*</span></label><textarea class="edit-textarea" v-model="fd.address" placeholder="Delivery address" rows="2" style="margin-top:0"></textarea></div>
                                 <div class="edit-field" style="margin-top:4px"><label class="edit-label">Remarks</label><input type="text" class="edit-input" v-model="fd.remarks" placeholder="Remarks (optional)" style="width:100%" /></div>
                             </div>
                         </div>
@@ -287,12 +324,12 @@
                                     <thead><tr><th>Qty</th><th>Destination</th><th>Customization</th><th>Labor</th><th>Mockup</th><th>Action</th></tr></thead>
                                     <tbody>
                                         <tr v-for="(alloc, aIdx) in getAllocs(fabId, item.id)" :key="alloc._uid" :class="{ 'alloc-row--split': getAllocs(fabId, item.id).length > 1 }">
-                                            <td><input type="number" class="edit-input edit-input--qty" :value="alloc.quantity_assigned" @input="updateAllocQty(fabId, item.id, aIdx, $event)" min="0" /></td>
+                                            <td><input type="number" class="edit-input edit-input--qty" :value="alloc.quantity_assigned" @input="updateAllocQty(fabId, item.id, aIdx, $event)" min="0" /><span v-if="!alloc.quantity_assigned || alloc.quantity_assigned <= 0" class="req">*</span></td>
                                             <td>
                                                 <select class="edit-select" :value="alloc.deliveries_uid" @change="updateAllocField(fabId, item.id, aIdx, 'deliveries_uid', $event.target.value)">
                                                     <option value="">Select delivery...</option>
                                                     <option v-for="fd in formDeliveries" :key="fd._uid" :value="fd._uid">{{ fd.label || 'Unnamed' }} ({{ fd.deliverytype || '?' }})</option>
-                                                </select>
+                                                </select><span v-if="!alloc.deliveries_uid" class="req">*</span>
                                             </td>
                                             <td>
                                                 <select class="edit-select" :value="alloc.customization" @change="updateAllocField(fabId, item.id, aIdx, 'customization', $event.target.value)">
@@ -532,6 +569,63 @@ export default {
         const splitGroupCounts = computed(() => { const m = {}; for (const l of currentLines.value) { if (l.splitgroupid) m[l.splitgroupid] = (m[l.splitgroupid] || 0) + 1; } return m; });
         function isSplit(line) { return line.splitgroupid && (splitGroupCounts.value[line.splitgroupid] || 0) > 1; }
         function linesForDelivery(deliveryId) { return resolvedLines.value.filter(l => l.deliveries_headerid === deliveryId); }
+        const unassignedLines = computed(() => {
+            const deliveryIds = new Set(currentDeliveries.value.map(d => d.id));
+            return resolvedLines.value.filter(l => !l.deliveries_headerid || !deliveryIds.has(l.deliveries_headerid));
+        });
+
+        const canSubmit = computed(() => {
+            const h = currentHeader.value;
+            if (!h) return false;
+            if (!h.title) return false;
+            if (!h.pic_bda) return false;
+            if (!h.pic_ops) return false;
+            if (!h.quoteref) return false;
+            if (!h.invoiceref) return false;
+            if (currentDeliveries.value.length === 0) return false;
+            if (attachedBookings.value.length === 0) return false;
+            if (resolvedLines.value.length === 0) return false;
+            for (const d of currentDeliveries.value) {
+                if (!d.label) return false;
+                if (!d.deadline) return false;
+                if (!d.pic_name) return false;
+                if (!d.pic_phone) return false;
+                if (!d.address) return false;
+            }
+            for (const l of resolvedLines.value) {
+                if (!l.quantity_assigned || l.quantity_assigned <= 0) return false;
+                if (!l.deliveries_headerid) return false;
+            }
+            return true;
+        });
+
+        const canSaveForm = computed(() => {
+            if (!form.title) return false;
+            if (!form.pic_bda) return false;
+            if (!form.pic_ops) return false;
+            if (!form.quoteref) return false;
+            if (!form.invoiceref) return false;
+            if (formDeliveries.value.length === 0) return false;
+            if (formAttachedBookingIds.value.length === 0) return false;
+            for (const fd of formDeliveries.value) {
+                if (!fd.label) return false;
+                if (!fd.deadline) return false;
+                if (!fd.pic_name) return false;
+                if (!fd.pic_phone) return false;
+                if (!fd.address) return false;
+            }
+            // Check all allocation rows
+            let hasAllocs = false;
+            for (const key of Object.keys(formAllocations)) {
+                for (const alloc of formAllocations[key]) {
+                    hasAllocs = true;
+                    if (!alloc.quantity_assigned || alloc.quantity_assigned <= 0) return false;
+                    if (!alloc.deliveries_uid) return false;
+                }
+            }
+            if (!hasAllocs) return false;
+            return true;
+        });
 
         // ── Field consistency check ──
         function getFieldStatus(values) {
@@ -975,7 +1069,7 @@ export default {
 
         return {
             currentHeader, currentDeliveries, attachedBookings, resolvedTeammates,
-            resolvedLines, linesForDelivery, isSplit, pipelineBatches, pipelineDeliveryGroups,
+            resolvedLines, linesForDelivery, unassignedLines, isSplit, canSubmit, canSaveForm, pipelineBatches, pipelineDeliveryGroups,
             activeView,
             getTeammateName, formatDate, statusKey, laborDisplay,
             handleStatusChange, handleSetBdNumber, handleSetDoLink,
@@ -1320,4 +1414,9 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
     .edit-bar { flex-wrap: wrap; }
     .pipe-table { min-width: 750px; }
 }
+
+/* ═══ VALIDATION INDICATORS ═══ */
+.submitted-notice { font-size: 12px; color: $gray-500; font-style: italic; }
+.req { color: #ef4444; font-weight: 700; margin-left: 2px; }
+.pipe-card--warn { border: 1px solid #fca5a5; }
 </style>
