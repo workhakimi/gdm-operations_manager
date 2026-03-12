@@ -7,15 +7,6 @@
 
         <!-- ═══ MAIN CONTENT ═══ -->
         <div v-else class="ops-content">
-            <!-- Action status bars -->
-            <div v-if="actionFailed" class="action-failed-bar" @click="handleRetry">
-                <span class="failed-text">{{ actionFailedLabel }} failed.</span>
-                <span class="failed-retry">Click to retry</span>
-            </div>
-            <div v-if="actionSuccess" class="action-success-bar">
-                <span class="success-text">Action completed successfully.</span>
-            </div>
-
             <!-- Waiting overlay (blocks all interaction) -->
             <div v-if="pendingAction" class="action-waiting-overlay">
                 <div class="action-waiting-spinner"></div>
@@ -117,6 +108,14 @@
 
             <!-- ═══ ORDER PLAN VIEW (INTERACTIVE EDITOR) ═══ -->
             <div v-if="activeView === 'orderplan'" class="view-content">
+                <!-- Action status -->
+                <div v-if="actionFailed" class="action-failed-bar" @click="handleRetry">
+                    <span class="failed-text">{{ actionFailedLabel }} failed.</span>
+                    <span class="failed-retry">Click to retry</span>
+                </div>
+                <div v-if="actionSuccess" class="action-success-bar">
+                    <span class="success-text">Action completed successfully.</span>
+                </div>
                 <!-- Edit bar -->
                 <div class="edit-bar" @click.self="confirmAction = null">
                     <template v-if="!opEditMode">
@@ -364,6 +363,14 @@
 
             <!-- ═══ PIPELINE MANAGER VIEW ═══ -->
             <div v-if="activeView === 'pipeline'" class="view-content">
+                <!-- Action status -->
+                <div v-if="actionFailed" class="action-failed-bar" @click="handleRetry">
+                    <span class="failed-text">{{ actionFailedLabel }} failed.</span>
+                    <span class="failed-retry">Click to retry</span>
+                </div>
+                <div v-if="actionSuccess" class="action-success-bar">
+                    <span class="success-text">Action completed successfully.</span>
+                </div>
                 <div v-if="(currentHeader.status || '').toLowerCase() === 'submitted'" class="edit-bar" @click.self="confirmAction = null">
                     <button type="button" class="btn-action" :class="confirmAction === 'unsubmit' ? 'btn-action--confirm' : 'btn-action--dark'" @click="confirmOrDo('unsubmit', handleUnsubmitOrderPlan)">{{ confirmAction === 'unsubmit' ? 'Confirm Unsubmit?' : 'Unsubmit to Draft' }}</button>
                 </div>
