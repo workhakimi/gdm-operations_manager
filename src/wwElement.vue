@@ -1,5 +1,6 @@
 <template>
-    <div class="ops-manager" :style="{ '--c-batch-sep': content.colorBatchSeparator, '--c-th-bg': content.colorTableHeaderBg, '--c-confirm-bg': content.colorConfirmBtnBg }" @click.capture="confirmAction && !$event.target.closest('.btn-action') ? confirmAction = null : null">
+    <div class="ops-manager" :style="{ '--c-batch-sep': content.colorBatchSeparator, '--c-th-bg': content.colorTableHeaderBg, '--c-confirm-bg': content.colorConfirmBtnBg }">
+        <div v-if="confirmAction" class="confirm-dismiss-overlay" @click="confirmAction = null" />
         <!-- ═══ EMPTY STATE ═══ -->
         <div v-if="!currentHeader" class="empty-state">
             <p class="empty-text">Select an order plan to view operations.</p>
@@ -1178,6 +1179,9 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
     display: flex; flex-direction: column; width: 100%; min-height: 100%;
     background: #f0f0f0; font-family: $font; font-size: 12px; color: $gray-900; box-sizing: border-box;
 }
+
+/* ═══ CONFIRM DISMISS OVERLAY ═══ */
+.confirm-dismiss-overlay { position: fixed; inset: 0; z-index: 10; cursor: default; }
 
 /* ═══ EMPTY ═══ */
 .empty-state { display: flex; align-items: center; justify-content: center; padding: 80px 20px; }
