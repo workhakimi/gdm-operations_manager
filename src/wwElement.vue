@@ -203,8 +203,8 @@
                                             <td>{{ line._inv?.color || '-' }}</td>
                                             <td class="col-left cell-mono">{{ line.quantity_assigned }}/{{ line._bookingItem?.quantity || '?' }}<span v-if="!line.quantity_assigned || line.quantity_assigned <= 0" class="req">*</span></td>
                                             <td><span v-if="isSplit(line)" class="split-tag">Split</span><span v-else class="cell-muted">-</span></td>
-                                            <td>{{ custDisplay(line.customization) }}</td>
-                                            <td>{{ laborDisplay(line.labor) || 'None' }}</td>
+                                            <td>{{ custDisplay(line.customization) }}<span v-if="!line.customization" class="req">*</span></td>
+                                            <td>{{ laborDisplay(line.labor) || '-' }}<span v-if="!line.labor" class="req">*</span></td>
                                             <td>
                                                 <select class="status-select" :class="'ss--' + statusKey(line._bookingItem?.status)" :value="line._bookingItem?.status || 'Booked'" @change="handleStatusChange(line.bookingitems_headerid, $event.target.value)">
                                                     <option value="Booked">Booked</option><option value="Issue Raised">Issue Raised</option><option value="Processing">Processing</option><option value="Delivered">Delivered</option>
@@ -238,8 +238,8 @@
                                             <td>{{ line._inv?.model || 'Unknown' }}</td>
                                             <td>{{ line._inv?.color || '-' }}</td>
                                             <td class="col-left cell-mono">{{ line.quantity_assigned }}/{{ line._bookingItem?.quantity || '?' }}</td>
-                                            <td>{{ custDisplay(line.customization) }}</td>
-                                            <td>{{ laborDisplay(line.labor) || 'None' }}</td>
+                                            <td>{{ custDisplay(line.customization) }}<span v-if="!line.customization" class="req">*</span></td>
+                                            <td>{{ laborDisplay(line.labor) || '-' }}<span v-if="!line.labor" class="req">*</span></td>
                                             <td><span class="status-tag" :class="'st--' + statusKey(line._bookingItem?.status)">{{ line._bookingItem?.status || 'Booked' }}</span></td>
                                         </tr>
                                     </tbody>
@@ -339,16 +339,18 @@
                                             </td>
                                             <td>
                                                 <select class="edit-select" :value="alloc.customization" @change="updateAllocField(fabId, item.id, aIdx, 'customization', $event.target.value)">
+                                                    <option value="" disabled>Select...</option>
                                                     <option v-for="opt in custOptions" :key="opt.customization_sku" :value="opt.customization_sku">{{ opt.subtype }}</option>
-                                                </select>
+                                                </select><span v-if="!alloc.customization" class="req">*</span>
                                             </td>
                                             <td>
                                                 <select class="edit-select" :value="alloc.labor" @change="updateAllocField(fabId, item.id, aIdx, 'labor', $event.target.value)">
+                                                    <option value="" disabled>Select...</option>
                                                     <option v-for="opt in labOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-                                                </select>
+                                                </select><span v-if="!alloc.labor" class="req">*</span>
                                             </td>
                                             <td>
-                                                <input v-if="alloc.customization && alloc.customization !== 'None'" type="text" class="edit-input" :value="alloc.mockup_link" @input="updateAllocField(fabId, item.id, aIdx, 'mockup_link', $event.target.value)" placeholder="URL" />
+                                                <input v-if="alloc.customization && alloc.customization !== 'NONE'" type="text" class="edit-input" :value="alloc.mockup_link" @input="updateAllocField(fabId, item.id, aIdx, 'mockup_link', $event.target.value)" placeholder="URL" />
                                                 <span v-else class="cell-muted">-</span>
                                             </td>
                                             <td class="alloc-actions">
@@ -482,6 +484,7 @@
 import { ref, reactive, computed, watch } from 'vue';
 
 const LABOR_LABELS = {
+    none: 'None',
     sleeving: 'Box Sleeving',
     giftbox: 'Standard Gift Box',
     giftbox_addons: 'Gift Box + Addons',
@@ -532,17 +535,17 @@ export default {
             { type: 'UV+LASER', subtype: 'Both UV Laser (1 Logo & 1 Name)', customization_sku: 'UVEGV-SET' },
             { type: 'UV+LASER', subtype: 'Both UV Laser (2 Logo & 1 Name)', customization_sku: 'UVEGV-SET-2' },
             { type: 'UV+LASER', subtype: 'Both UV Laser (360 & 1 Name)', customization_sku: 'UVEGV-SET-360' },
-            { type: 'NONE', subtype: 'None', customization_sku: null },
+            { type: 'NONE', subtype: 'None', customization_sku: 'NONE' },
         ];
         const custSkuToLabel = {};
         const custSkuToType = {};
         for (const o of custOptions) { custSkuToLabel[o.customization_sku || ''] = o.subtype; custSkuToType[o.customization_sku || ''] = o.type; }
-        function custDisplay(val) { if (!val) return 'None'; return custSkuToLabel[val] || val; }
-        function custType(val) { if (!val) return 'NONE'; return custSkuToType[val] || 'NONE'; }
+        function custDisplay(val) { if (!val || val === 'NONE') return 'None'; return custSkuToLabel[val] || val; }
+        function custType(val) { if (!val || val === 'NONE') return 'NONE'; return custSkuToType[val] || 'NONE'; }
         const labOptions = computed(() => {
             const raw = props.content?.laborOptions;
             if (Array.isArray(raw) && raw.length) return raw;
-            return [{ value: '', label: 'None' }, { value: 'sleeving', label: 'Box Sleeving' }, { value: 'giftbox', label: 'Standard Gift Box' }, { value: 'giftbox_addons', label: 'Gift Box + Addons' }];
+            return [{ value: 'none', label: 'None' }, { value: 'sleeving', label: 'Box Sleeving' }, { value: 'giftbox', label: 'Standard Gift Box' }, { value: 'giftbox_addons', label: 'Gift Box + Addons' }];
         });
 
         // ── Lookup maps ──
@@ -609,6 +612,8 @@ export default {
             for (const l of resolvedLines.value) {
                 if (!l.quantity_assigned || l.quantity_assigned <= 0) return false;
                 if (!l.deliveries_headerid) return false;
+                if (!l.customization) return false;
+                if (!l.labor) return false;
             }
             return true;
         });
@@ -635,6 +640,8 @@ export default {
                     hasAllocs = true;
                     if (!alloc.quantity_assigned || alloc.quantity_assigned <= 0) return false;
                     if (!alloc.deliveries_uid) return false;
+                    if (!alloc.customization) return false;
+                    if (!alloc.labor) return false;
                 }
             }
             if (!hasAllocs) return false;
@@ -959,11 +966,11 @@ export default {
                         updated_at: now,
                         bookingitems_headerid: biId,
                         deliveries_headerid: delUidToId[alloc.deliveries_uid] || null,
-                        customization: (!alloc.customization || alloc.customization === 'None') ? null : alloc.customization,
+                        customization: (alloc.customization === 'NONE') ? null : (alloc.customization || null),
                         quantity_assigned: parseInt(alloc.quantity_assigned) || 0,
                         splitgroupid: alloc.splitgroupid || null,
                         mockup_link: alloc.mockup_link || null,
-                        labor: alloc.labor || null,
+                        labor: (alloc.labor === 'none') ? null : (alloc.labor || null),
                     });
                 }
             }
