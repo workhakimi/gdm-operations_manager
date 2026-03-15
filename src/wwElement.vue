@@ -89,7 +89,9 @@
                                             <option value="Booked">Booked</option>
                                             <option value="Issue Raised">Issue Raised</option>
                                             <option value="Processing">Processing</option>
-                                            <option value="Delivered">Delivered</option>
+                                            <option value="Delivered to Production">Delivered to Production</option>
+                                            <option value="Delivered to Client">Delivered to Client</option>
+                                            <option value="Released">Released</option>
                                         </select>
                                     </td>
                                     <td class="col-left cell-mono" :class="{ 'cell-neg': (item.balanceref ?? 0) < 0 }">{{ item.balanceref ?? '-' }}</td>
@@ -97,6 +99,22 @@
                             </tbody>
                         </table>
                     </div>
+                    <details v-if="booking._releasedItems && booking._releasedItems.length > 0" class="released-details">
+                        <summary class="released-summary">Previously Released ({{ booking._releasedItems.length }})</summary>
+                        <table class="booking-table released-table">
+                            <tbody>
+                                <tr v-for="item in booking._releasedItems" :key="item.id">
+                                    <td class="cell-img"><img v-if="item._inv?.imagelink" :src="item._inv.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
+                                    <td class="cell-mono">{{ item.sku }}</td>
+                                    <td>{{ item._inv?.model || 'Unknown' }}</td>
+                                    <td>{{ item._inv?.color || '-' }}</td>
+                                    <td class="col-left">{{ item.quantity }}</td>
+                                    <td><span class="status-tag st--released">Released</span></td>
+                                    <td class="col-left cell-mono">{{ item.balanceref ?? '-' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </details>
                 </div>
             </section>
 
@@ -567,9 +585,11 @@ export default {
             return currentAttBookings.value.map(ab => {
                 const bh = bookingHeaderLookup.value[ab.booking_headerid];
                 if (!bh) return null;
-                const items = (bookingItemsByHeader.value[bh.id] || []).map(item => ({ ...item, _inv: inventoryLookup.value[item.sku] || null }));
+                const allItems = (bookingItemsByHeader.value[bh.id] || []).map(item => ({ ...item, _inv: inventoryLookup.value[item.sku] || null }));
+                const items = allItems.filter(i => i.status !== 'Released');
+                const releasedItems = allItems.filter(i => i.status === 'Released');
                 const pic = bh.pic_id ? teammateLookup.value[bh.pic_id] : null;
-                return { ...bh, _items: items, _picName: pic?.name || '' };
+                return { ...bh, _items: items, _releasedItems: releasedItems, _picName: pic?.name || '' };
             }).filter(Boolean);
         });
 
@@ -585,10 +605,11 @@ export default {
 
         const splitGroupCounts = computed(() => { const m = {}; for (const l of currentLines.value) { if (l.splitgroupid) m[l.splitgroupid] = (m[l.splitgroupid] || 0) + 1; } return m; });
         function isSplit(line) { return line.splitgroupid && (splitGroupCounts.value[line.splitgroupid] || 0) > 1; }
-        function linesForDelivery(deliveryId) { return resolvedLines.value.filter(l => l.deliveries_headerid === deliveryId); }
+        const activeLines = computed(() => resolvedLines.value.filter(l => l._bookingItem?.status !== 'Released'));
+        function linesForDelivery(deliveryId) { return activeLines.value.filter(l => l.deliveries_headerid === deliveryId); }
         const unassignedLines = computed(() => {
             const deliveryIds = new Set(currentDeliveries.value.map(d => d.id));
-            return resolvedLines.value.filter(l => !l.deliveries_headerid || !deliveryIds.has(l.deliveries_headerid));
+            return activeLines.value.filter(l => !l.deliveries_headerid || !deliveryIds.has(l.deliveries_headerid));
         });
 
         const canSubmit = computed(() => {
@@ -601,7 +622,7 @@ export default {
             if (!h.invoiceref) return false;
             if (currentDeliveries.value.length === 0) return false;
             if (attachedBookings.value.length === 0) return false;
-            if (resolvedLines.value.length === 0) return false;
+            if (activeLines.value.length === 0) return false;
             for (const d of currentDeliveries.value) {
                 if (!d.label) return false;
                 if (!d.deadline) return false;
@@ -609,7 +630,7 @@ export default {
                 if (!d.pic_phone) return false;
                 if (!d.address) return false;
             }
-            for (const l of resolvedLines.value) {
+            for (const l of activeLines.value) {
                 if (!l.quantity_assigned || l.quantity_assigned <= 0) return false;
                 if (!l.deliveries_headerid) return false;
                 if (!l.customization) return false;
@@ -662,6 +683,7 @@ export default {
         const pipelineBatches = computed(() => {
             const batchMap = {};
             for (const line of resolvedLines.value) {
+                if (line._bookingItem?.status === 'Released') continue;
                 const type = custType(line.customization);
                 const key = `${line.deliveries_headerid}::${type}`;
                 if (!batchMap[key]) {
@@ -819,6 +841,9 @@ export default {
                     mockup_link: line.mockup_link || '',
                     labor: line.labor || '',
                     splitgroupid: line.splitgroupid || '',
+                    _originalCustomization: line.customization || '',
+                    _originalLabor: line.labor || '',
+                    _existingBdNumber: line.bd_number || null,
                 });
             }
 
@@ -959,6 +984,11 @@ export default {
             for (const key of Object.keys(formAllocations)) {
                 const [, biId] = key.split('::');
                 for (const alloc of formAllocations[key]) {
+                    // Preserve BD number if customization and labor unchanged
+                    const custChanged = alloc.customization !== alloc._originalCustomization;
+                    const laborChanged = alloc.labor !== alloc._originalLabor;
+                    const preserveBd = alloc._existingBdNumber && !custChanged && !laborChanged;
+
                     lines.push({
                         id: alloc._existingId || genId(),
                         headerid: h.id,
@@ -971,6 +1001,7 @@ export default {
                         splitgroupid: alloc.splitgroupid || null,
                         mockup_link: alloc.mockup_link || null,
                         labor: (alloc.labor === 'none') ? null : (alloc.labor || null),
+                        bd_number: preserveBd ? alloc._existingBdNumber : null,
                     });
                 }
             }
@@ -1223,7 +1254,9 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .ss--booked { background-color: $blue-50; color: $blue; }
 .ss--issue-raised { background-color: $red-50; color: $red-dark; }
 .ss--processing { background-color: $amber-50; color: darken($amber, 10%); }
-.ss--delivered { background-color: $green-50; color: $green; }
+.ss--delivered-to-production { background-color: #f5f3ff; color: #7c3aed; }
+.ss--delivered-to-client { background-color: $green-50; color: $green; }
+.ss--released { background-color: $gray-100; color: $gray-500; }
 
 .status-tag {
     display: inline-block; padding: 2px 8px; font-size: 10px; font-weight: 600; font-family: $font; border-radius: 3px; white-space: nowrap;
@@ -1231,7 +1264,9 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .st--booked { background-color: $blue-50; color: $blue; }
 .st--issue-raised { background-color: $red-50; color: $red-dark; }
 .st--processing { background-color: $amber-50; color: darken($amber, 10%); }
-.st--delivered { background-color: $green-50; color: $green; }
+.st--delivered-to-production { background-color: #f5f3ff; color: #7c3aed; }
+.st--delivered-to-client { background-color: $green-50; color: $green; }
+.st--released { background-color: $gray-100; color: $gray-500; }
 
 /* ═══ TOGGLE BAR ═══ */
 .toggle-bar { display: flex; gap: 0; padding: 0 16px; border-bottom: 2px solid $gray-200; background: $white; }
@@ -1450,6 +1485,10 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 /* ═══ VALIDATION INDICATORS ═══ */
 .submitted-notice { font-size: 12px; color: $gray-500; font-style: italic; }
 .req { color: #ef4444; font-weight: 700; margin-left: 2px; }
+.released-details { margin-top: 4px; }
+.released-summary { font-size: 10px; color: $gray-400; cursor: pointer; padding: 4px 8px; font-style: italic; }
+.released-summary:hover { color: $gray-600; }
+.released-table { opacity: 0.5; }
 .bd-warn-banner { background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; padding: 8px 12px; border-radius: 4px; font-size: 12px; margin-bottom: 8px; }
 .pipe-card--warn { border: 1px solid #fca5a5; }
 .btn-action--confirm { background: $amber; color: $white; &:hover { background: darken($amber, 8%); } }
