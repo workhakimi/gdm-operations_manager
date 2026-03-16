@@ -628,8 +628,8 @@ export default {
         function custType(val) { if (!val || val === 'NONE') return 'NONE'; return custSkuToType[val] || 'NONE'; }
         const labOptions = computed(() => {
             const raw = props.content?.laborOptions;
-            if (Array.isArray(raw) && raw.length) return raw;
-            return [{ value: 'none', label: 'None' }, { value: 'sleeving', label: 'Box Sleeving' }, { value: 'giftbox', label: 'Standard Gift Box' }, { value: 'giftbox_addons', label: 'Gift Box + Addons' }];
+            const list = (Array.isArray(raw) && raw.length) ? raw : [{ value: 'none', label: 'None' }, { value: 'sleeving', label: 'Box Sleeving' }, { value: 'giftbox', label: 'Standard Gift Box' }, { value: 'giftbox_addons', label: 'Gift Box + Addons' }];
+            return list.map(o => ({ ...o, value: (!o.value && o.label === 'None') ? 'none' : o.value }));
         });
 
         // ── Lookup maps ──
