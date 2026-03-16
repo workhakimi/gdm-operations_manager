@@ -1871,6 +1871,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
     font-size: 12px;
     color: #6b7280;
     line-height: 1.4;
+    white-space: pre-line;
 }
 .ops-cl-sub {
     border-bottom: 1px solid #f3f4f6;
