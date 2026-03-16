@@ -724,6 +724,7 @@ export default {
                 if (!l.deliveries_headerid) return false;
                 if (!l.customization) return false;
                 if (!l.labor) return false;
+                if (l.customization && l.customization !== 'None' && !l.mockup_link) return false;
             }
             return true;
         });
