@@ -480,14 +480,14 @@
             <!-- ═══ CHANGE LOG ═══ -->
             <div v-if="currentHeader && hasAnyChangeLogs" class="ops-changelog-section">
                 <button type="button" class="ops-changelog-toggle" @click="changeLogOpen = !changeLogOpen">
-                    <svg class="ops-changelog-chevron" :class="{ 'is-open': changeLogOpen }" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5L6 7.5L9 4.5"/></svg>
+                    <svg class="ops-changelog-chevron" :class="{ 'is-open': changeLogOpen }" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 3L7.5 6L4.5 9"/></svg>
                     <span>Change Log</span>
                 </button>
                 <div class="ops-changelog-wrap" :class="{ 'is-open': changeLogOpen }">
                     <div class="ops-changelog-inner">
                         <div v-if="orderPlanChangeLogs.length" class="ops-cl-sub">
                             <button type="button" class="ops-cl-sub-toggle" @click="clOrderPlanOpen = !clOrderPlanOpen">
-                                <svg class="ops-cl-sub-chevron" :class="{ 'is-open': clOrderPlanOpen }" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5L6 7.5L9 4.5"/></svg>
+                                <svg class="ops-cl-sub-chevron" :class="{ 'is-open': clOrderPlanOpen }" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 3L7.5 6L4.5 9"/></svg>
                                 <span>Order Plan ({{ orderPlanChangeLogs.length }})</span>
                             </button>
                             <div class="ops-cl-sub-wrap" :class="{ 'is-open': clOrderPlanOpen }">
@@ -505,7 +505,7 @@
                         </div>
                         <div v-if="bookingChangeLogs.length" class="ops-cl-sub">
                             <button type="button" class="ops-cl-sub-toggle" @click="clBookingOpen = !clBookingOpen">
-                                <svg class="ops-cl-sub-chevron" :class="{ 'is-open': clBookingOpen }" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5L6 7.5L9 4.5"/></svg>
+                                <svg class="ops-cl-sub-chevron" :class="{ 'is-open': clBookingOpen }" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 3L7.5 6L4.5 9"/></svg>
                                 <span>Attached Booking ({{ bookingChangeLogs.length }})</span>
                             </button>
                             <div class="ops-cl-sub-wrap" :class="{ 'is-open': clBookingOpen }">
