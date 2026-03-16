@@ -506,7 +506,7 @@
                         <div v-if="bookingChangeLogs.length" class="ops-cl-sub">
                             <button type="button" class="ops-cl-sub-toggle" @click="clBookingOpen = !clBookingOpen">
                                 <svg class="ops-cl-sub-chevron" :class="{ 'is-open': clBookingOpen }" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 3L7.5 6L4.5 9"/></svg>
-                                <span>Attached Booking ({{ bookingChangeLogs.length }})</span>
+                                <span>Attached Bookings ({{ bookingChangeLogs.length }})</span>
                             </button>
                             <div class="ops-cl-sub-wrap" :class="{ 'is-open': clBookingOpen }">
                                 <div class="ops-cl-sub-inner">
