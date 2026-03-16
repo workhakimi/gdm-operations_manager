@@ -1105,6 +1105,134 @@ export default {
             };
         }
 
+        function _fmtDate(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return iso;
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            let hrs = d.getHours(); const ap = hrs >= 12 ? 'PM' : 'AM'; hrs = hrs % 12 || 12;
+            const min = String(d.getMinutes()).padStart(2, '0');
+            return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} ${hrs}:${min} ${ap}`;
+        }
+
+        function _diffField(label, oldVal, newVal) {
+            const o = oldVal || ''; const n = newVal || '';
+            if (o === n) return null;
+            if (!o && n) return `${label}: (empty) → "${n}"`;
+            if (o && !n) return `${label}: "${o}" → (empty)`;
+            return `${label}: "${o}" → "${n}"`;
+        }
+
+        function buildDetailedDescription(payload) {
+            const h = currentHeader.value;
+            const opid = payload.orderplan_headers?.opid || h?.opid || '-';
+            const parts = [];
+
+            // ── Header metadata changes ──
+            const metaChanges = [];
+            const mf = [
+                ['Title', h.title, form.title],
+                ['PIC BDA', getTeammateName(h.pic_bda) || h.pic_bda, getTeammateName(form.pic_bda) || form.pic_bda],
+                ['PIC Ops', getTeammateName(h.pic_ops) || h.pic_ops, getTeammateName(form.pic_ops) || form.pic_ops],
+                ['Quote Ref', h.quoteref, form.quoteref],
+                ['Invoice Ref', h.invoiceref, form.invoiceref],
+            ];
+            for (const [label, oldV, newV] of mf) {
+                const d = _diffField(label, oldV, newV);
+                if (d) metaChanges.push(d);
+            }
+            if (metaChanges.length) parts.push('Metadata Updated:\n' + metaChanges.join('\n'));
+
+            // ── Delivery changes ──
+            const oldDels = currentDeliveries.value;
+            const newDels = formDeliveries.value;
+            const oldDelMap = {};
+            for (const d of oldDels) oldDelMap[d.id] = d;
+
+            for (const fd of newDels) {
+                const od = fd._existingId ? oldDelMap[fd._existingId] : null;
+                if (!od) {
+                    parts.push(`Delivery Location Added: "${fd.label || 'Untitled'}" (${fd.deliverytype || '-'})`);
+                    continue;
+                }
+                delete oldDelMap[fd._existingId];
+                const dc = [];
+                const df = [
+                    ['Label', od.label, fd.label],
+                    ['Type', od.deliverytype, fd.deliverytype],
+                    ['Deadline', _fmtDate(od.deadline), _fmtDate(fd.deadline)],
+                    ['Contact', od.pic_name, fd.pic_name],
+                    ['Phone', od.pic_phone, fd.pic_phone],
+                    ['Address', od.address, fd.address],
+                    ['Remarks', od.remarks, fd.remarks],
+                ];
+                for (const [l, ov, nv] of df) { const d = _diffField(l, ov, nv); if (d) dc.push(d); }
+                if (dc.length) parts.push(`Delivery "${od.label || 'Untitled'}" Updated:\n` + dc.join('\n'));
+            }
+            for (const removed of Object.values(oldDelMap)) {
+                parts.push(`Delivery Location Removed: "${removed.label || 'Untitled'}"`);
+            }
+
+            // ── Attached bookings changes ──
+            const oldBkIds = new Set(currentAttBookings.value.map(ab => ab.booking_headerid));
+            const newBkIds = new Set(formAttachedBookingIds.value);
+            for (const id of newBkIds) {
+                if (!oldBkIds.has(id)) {
+                    const bh = bookingHeaderLookup.value[id];
+                    parts.push(`Booking Attached: ${bh?.bookingnumber || id} ${bh?.bookingtitle || ''}`);
+                }
+            }
+            for (const id of oldBkIds) {
+                if (!newBkIds.has(id)) {
+                    const bh = bookingHeaderLookup.value[id];
+                    parts.push(`Booking Detached: ${bh?.bookingnumber || id} ${bh?.bookingtitle || ''}`);
+                }
+            }
+
+            // ── Allocation line changes ──
+            const oldLineMap = {};
+            for (const l of activeLines.value) oldLineMap[l.id] = l;
+            const seenIds = new Set();
+
+            for (const key of Object.keys(formAllocations)) {
+                const [, biId] = key.split('::');
+                const bi = bookingItemLookup.value[biId];
+                const sku = bi?.sku || biId;
+                for (const alloc of formAllocations[key]) {
+                    const oid = alloc._existingId;
+                    if (oid) seenIds.add(oid);
+                    const ol = oid ? oldLineMap[oid] : null;
+                    if (!ol) {
+                        parts.push(`Allocation Added: ${sku} qty ${alloc.quantity_assigned || 0}, customization: ${custDisplay(alloc.customization)}, labor: ${laborDisplay(alloc.labor) || '-'}`);
+                        continue;
+                    }
+                    const ac = [];
+                    if ((ol.quantity_assigned || 0) !== (parseInt(alloc.quantity_assigned) || 0)) ac.push(`Qty: ${ol.quantity_assigned} → ${alloc.quantity_assigned}`);
+                    const oldDel = ol._delivery?.label || ol.deliveries_headerid || '-';
+                    const newDelUid = alloc.deliveries_uid;
+                    const newFd = formDeliveries.value.find(fd => fd._uid === newDelUid);
+                    const newDel = newFd?.label || newDelUid || '-';
+                    if (oldDel !== newDel) ac.push(`Destination: "${oldDel}" → "${newDel}"`);
+                    const oldCust = custDisplay(ol.customization); const newCust = custDisplay(alloc.customization);
+                    if (oldCust !== newCust) ac.push(`Customization: ${oldCust} → ${newCust}`);
+                    const oldLab = laborDisplay(ol.labor) || '-'; const newLab = laborDisplay(alloc.labor) || '-';
+                    if (oldLab !== newLab) ac.push(`Labor: ${oldLab} → ${newLab}`);
+                    const oldMock = ol.mockup_link || ''; const newMock = alloc.mockup_link || '';
+                    if (oldMock !== newMock) ac.push(newMock ? `Mockup Link: set` : `Mockup Link: removed`);
+                    if (ac.length) parts.push(`Allocation ${sku} Updated:\n` + ac.join('\n'));
+                }
+            }
+            for (const [id, ol] of Object.entries(oldLineMap)) {
+                if (!seenIds.has(id)) {
+                    const sku = ol._bookingItem?.sku || '-';
+                    parts.push(`Allocation Removed: ${sku} qty ${ol.quantity_assigned || 0}`);
+                }
+            }
+
+            if (parts.length === 0) return `No changes detected for Order Plan ${opid}.`;
+            return parts.join('\n\n');
+        }
+
         function buildPayload(action) {
             const h = currentHeader.value;
             const now = new Date().toISOString();
@@ -1185,28 +1313,16 @@ export default {
         function handleSaveOrderPlan() {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const payload = buildPayload('save_draft');
-            const opid = payload.orderplan_headers?.opid || '-';
-            const delCount = payload.orderplan_deliveries?.length || 0;
-            const bkCount = payload.orderplan_attbookings?.length || 0;
-            const lineCount = payload.orderplan_lines?.length || 0;
-            payload.change_log = buildChangeLog(
-                'Order Plan Saved by Operations in Operations Tool',
-                `Saved Order Plan ${opid} as Draft with ${delCount} delivery location(s), ${bkCount} attached booking(s), and ${lineCount} allocation line(s) by Operations in Operations Tool.`
-            );
+            const desc = buildDetailedDescription(payload);
+            payload.change_log = buildChangeLog('Order Plan Saved by Operations in Operations Tool', desc);
             dispatchAction('save', 'onSaveOrderPlan', payload);
         }
 
         function handleSubmitOrderPlan() {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const payload = buildPayload('request_process');
-            const opid = payload.orderplan_headers?.opid || '-';
-            const delCount = payload.orderplan_deliveries?.length || 0;
-            const bkCount = payload.orderplan_attbookings?.length || 0;
-            const lineCount = payload.orderplan_lines?.length || 0;
-            payload.change_log = buildChangeLog(
-                'Order Plan Submitted by Operations in Operations Tool',
-                `Submitted Order Plan ${opid} for processing with ${delCount} delivery location(s), ${bkCount} attached booking(s), and ${lineCount} allocation line(s) by Operations in Operations Tool.`
-            );
+            const desc = buildDetailedDescription(payload);
+            payload.change_log = buildChangeLog('Order Plan Submitted by Operations in Operations Tool', desc);
             dispatchAction('submit', 'onSubmitOrderPlan', payload);
         }
 
