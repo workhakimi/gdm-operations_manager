@@ -477,6 +477,53 @@
                     </div>
                 </section>
             </div>
+            <!-- ═══ CHANGE LOG ═══ -->
+            <div v-if="currentHeader && hasAnyChangeLogs" class="ops-changelog-section">
+                <button type="button" class="ops-changelog-toggle" @click="changeLogOpen = !changeLogOpen">
+                    <svg class="ops-changelog-chevron" :class="{ 'is-open': changeLogOpen }" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5L6 7.5L9 4.5"/></svg>
+                    <span>Change Log</span>
+                </button>
+                <div class="ops-changelog-wrap" :class="{ 'is-open': changeLogOpen }">
+                    <div class="ops-changelog-inner">
+                        <div v-if="orderPlanChangeLogs.length" class="ops-cl-sub">
+                            <button type="button" class="ops-cl-sub-toggle" @click="clOrderPlanOpen = !clOrderPlanOpen">
+                                <svg class="ops-cl-sub-chevron" :class="{ 'is-open': clOrderPlanOpen }" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5L6 7.5L9 4.5"/></svg>
+                                <span>Order Plan ({{ orderPlanChangeLogs.length }})</span>
+                            </button>
+                            <div class="ops-cl-sub-wrap" :class="{ 'is-open': clOrderPlanOpen }">
+                                <div class="ops-cl-sub-inner">
+                                    <div v-for="log in orderPlanChangeLogs" :key="log.id" class="ops-cl-entry">
+                                        <div class="ops-cl-row">
+                                            <span class="ops-cl-category">{{ log.category }}</span>
+                                            <span class="ops-cl-action">{{ log.action }}</span>
+                                            <span class="ops-cl-time">{{ formatDate(log.timestamp) }}</span>
+                                        </div>
+                                        <div class="ops-cl-desc">{{ log.description }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="bookingChangeLogs.length" class="ops-cl-sub">
+                            <button type="button" class="ops-cl-sub-toggle" @click="clBookingOpen = !clBookingOpen">
+                                <svg class="ops-cl-sub-chevron" :class="{ 'is-open': clBookingOpen }" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5L6 7.5L9 4.5"/></svg>
+                                <span>Attached Booking ({{ bookingChangeLogs.length }})</span>
+                            </button>
+                            <div class="ops-cl-sub-wrap" :class="{ 'is-open': clBookingOpen }">
+                                <div class="ops-cl-sub-inner">
+                                    <div v-for="log in bookingChangeLogs" :key="log.id" class="ops-cl-entry">
+                                        <div class="ops-cl-row">
+                                            <span class="ops-cl-category">{{ log.category }}</span>
+                                            <span class="ops-cl-action">{{ log.action }}</span>
+                                            <span class="ops-cl-time">{{ formatDate(log.timestamp) }}</span>
+                                        </div>
+                                        <div class="ops-cl-desc">{{ log.description }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Export Overlay -->
@@ -593,6 +640,29 @@ export default {
                 return { ...bh, _items: items, _releasedItems: releasedItems, _picName: pic?.name || '' };
             }).filter(Boolean);
         });
+
+        // ── Change Log ──
+        const changeLogData = computed(() => wwLib.wwUtils.getDataFromCollection(props.content?.changeLogData) || []);
+        const orderPlanChangeLogs = computed(() => {
+            const hdrId = currentHeader.value?.id;
+            if (!hdrId) return [];
+            return changeLogData.value
+                .filter(log => log.connection === hdrId)
+                .slice()
+                .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+        });
+        const bookingChangeLogs = computed(() => {
+            const attIds = new Set(currentAttBookings.value.map(a => a.booking_headerid));
+            if (!attIds.size) return [];
+            return changeLogData.value
+                .filter(log => attIds.has(log.connection))
+                .slice()
+                .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+        });
+        const hasAnyChangeLogs = computed(() => orderPlanChangeLogs.value.length > 0 || bookingChangeLogs.value.length > 0);
+        const changeLogOpen = ref(false);
+        const clOrderPlanOpen = ref(false);
+        const clBookingOpen = ref(false);
 
         // ── Lines resolved ──
         const resolvedLines = computed(() => {
@@ -743,7 +813,16 @@ export default {
         // ── Event handlers ──
         function handleStatusChange(bookingItemId, newStatus) {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
-            dispatchAction('status', 'onUpdateItemStatus', { booking_item_id: bookingItemId, new_status: newStatus });
+            const h = currentHeader.value;
+            const opid = h?.opid || '-';
+            dispatchAction('status', 'onUpdateItemStatus', {
+                booking_item_id: bookingItemId,
+                new_status: newStatus,
+                change_log: buildChangeLog(
+                    'Item Status Updated by Operations in Operations Tool',
+                    `In Order Plan ${opid}, updated booking item status to '${newStatus}' by Operations in Operations Tool.`
+                ),
+            });
         }
 
         // ── BD# / DO refs ──
@@ -760,25 +839,63 @@ export default {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const batch = pipelineBatches.value.find(b => b.key === batchKey); if (!batch) return;
             const value = bdRefs[batchKey]?.value || '';
-            dispatchAction('bd_number', 'onSetBdNumber', { batch_key: batchKey, line_ids: batch.items.map(i => i.lineId), bd_number: value });
+            const h = currentHeader.value;
+            const opid = h?.opid || '-';
+            dispatchAction('bd_number', 'onSetBdNumber', {
+                batch_key: batchKey,
+                line_ids: batch.items.map(i => i.lineId),
+                bd_number: value,
+                change_log: buildChangeLog(
+                    'BD Number Set by Operations in Operations Tool',
+                    `In Order Plan ${opid}, set BD number '${value}' for batch ${batchKey} (${batch.items.length} line(s)) by Operations in Operations Tool.`
+                ),
+            });
             stopEditing('bd', batchKey);
         }
         function handleSetDoLink(batchKey) {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const batch = pipelineBatches.value.find(b => b.key === batchKey); if (!batch) return;
             const value = doRefs[batchKey]?.value || '';
-            dispatchAction('do_link', 'onSetDoLink', { batch_key: batchKey, line_ids: batch.items.map(i => i.lineId), do_folder: value });
+            const h = currentHeader.value;
+            const opid = h?.opid || '-';
+            dispatchAction('do_link', 'onSetDoLink', {
+                batch_key: batchKey,
+                line_ids: batch.items.map(i => i.lineId),
+                do_folder: value,
+                change_log: buildChangeLog(
+                    'DO Link Set by Operations in Operations Tool',
+                    `In Order Plan ${opid}, set DO folder link '${value}' for batch ${batchKey} (${batch.items.length} line(s)) by Operations in Operations Tool.`
+                ),
+            });
             stopEditing('do', batchKey);
         }
         function handleUnsetBdNumber(batchKey) {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const batch = pipelineBatches.value.find(b => b.key === batchKey); if (!batch) return;
-            dispatchAction('bd_number', 'onUnsetBdNumber', { batch_key: batchKey, line_ids: batch.items.map(i => i.lineId) });
+            const h = currentHeader.value;
+            const opid = h?.opid || '-';
+            dispatchAction('bd_number', 'onUnsetBdNumber', {
+                batch_key: batchKey,
+                line_ids: batch.items.map(i => i.lineId),
+                change_log: buildChangeLog(
+                    'BD Number Unset by Operations in Operations Tool',
+                    `In Order Plan ${opid}, removed BD number for batch ${batchKey} (${batch.items.length} line(s)) by Operations in Operations Tool.`
+                ),
+            });
         }
         function handleUnsetDoLink(batchKey) {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const batch = pipelineBatches.value.find(b => b.key === batchKey); if (!batch) return;
-            dispatchAction('do_link', 'onUnsetDoLink', { batch_key: batchKey, line_ids: batch.items.map(i => i.lineId) });
+            const h = currentHeader.value;
+            const opid = h?.opid || '-';
+            dispatchAction('do_link', 'onUnsetDoLink', {
+                batch_key: batchKey,
+                line_ids: batch.items.map(i => i.lineId),
+                change_log: buildChangeLog(
+                    'DO Link Unset by Operations in Operations Tool',
+                    `In Order Plan ${opid}, removed DO folder link for batch ${batchKey} (${batch.items.length} line(s)) by Operations in Operations Tool.`
+                ),
+            });
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -950,6 +1067,22 @@ export default {
         function genId() { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16); }); }
         function genOpid() { return 'OP-' + String(Math.floor(100000 + Math.random() * 900000)); }
 
+        function klTimestamp() {
+            try { return new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Kuala_Lumpur' }).replace(' ', 'T') + '+08:00'; }
+            catch (e) { return new Date().toISOString(); }
+        }
+        function buildChangeLog(action, description) {
+            const h = currentHeader.value;
+            return {
+                id: genId(),
+                timestamp: klTimestamp(),
+                category: 'Order Plan',
+                action: action,
+                description: description,
+                connection: h?.id || null,
+            };
+        }
+
         function buildPayload(action) {
             const h = currentHeader.value;
             const now = new Date().toISOString();
@@ -1030,25 +1163,58 @@ export default {
         function handleSaveOrderPlan() {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const payload = buildPayload('save_draft');
+            const opid = payload.orderplan_headers?.opid || '-';
+            const delCount = payload.orderplan_deliveries?.length || 0;
+            const bkCount = payload.orderplan_attbookings?.length || 0;
+            const lineCount = payload.orderplan_lines?.length || 0;
+            payload.change_log = buildChangeLog(
+                'Order Plan Saved by Operations in Operations Tool',
+                `Saved Order Plan ${opid} as Draft with ${delCount} delivery location(s), ${bkCount} attached booking(s), and ${lineCount} allocation line(s) by Operations in Operations Tool.`
+            );
             dispatchAction('save', 'onSaveOrderPlan', payload);
         }
 
         function handleSubmitOrderPlan() {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const payload = buildPayload('request_process');
+            const opid = payload.orderplan_headers?.opid || '-';
+            const delCount = payload.orderplan_deliveries?.length || 0;
+            const bkCount = payload.orderplan_attbookings?.length || 0;
+            const lineCount = payload.orderplan_lines?.length || 0;
+            payload.change_log = buildChangeLog(
+                'Order Plan Submitted by Operations in Operations Tool',
+                `Submitted Order Plan ${opid} for processing with ${delCount} delivery location(s), ${bkCount} attached booking(s), and ${lineCount} allocation line(s) by Operations in Operations Tool.`
+            );
             dispatchAction('submit', 'onSubmitOrderPlan', payload);
         }
 
         function handleDeleteOrderPlan() {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const h = currentHeader.value;
-            dispatchAction('delete', 'onDeleteOrderPlan', { headerId: h?.id || null, opid: h?.opid || null });
+            const opid = h?.opid || '-';
+            dispatchAction('delete', 'onDeleteOrderPlan', {
+                headerId: h?.id || null,
+                opid: h?.opid || null,
+                change_log: buildChangeLog(
+                    'Order Plan Deleted by Operations in Operations Tool',
+                    `Deleted Order Plan ${opid} by Operations in Operations Tool.`
+                ),
+            });
         }
 
         function handleUnsubmitOrderPlan() {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const h = currentHeader.value;
-            dispatchAction('unsubmit', 'onUnsubmitOrderPlan', { headerId: h?.id || null, opid: h?.opid || null, status: 'Draft' });
+            const opid = h?.opid || '-';
+            dispatchAction('unsubmit', 'onUnsubmitOrderPlan', {
+                headerId: h?.id || null,
+                opid: h?.opid || null,
+                status: 'Draft',
+                change_log: buildChangeLog(
+                    'Order Plan Unsubmitted by Operations in Operations Tool',
+                    `Reverted Order Plan ${opid} from Submitted to Draft by Operations in Operations Tool.`
+                ),
+            });
         }
 
         // ── Action tracking ──
@@ -1147,6 +1313,7 @@ export default {
             handleSaveOrderPlan, handleSubmitOrderPlan, handleDeleteOrderPlan, handleUnsubmitOrderPlan,
             bookingHeaderLookup,
             exportOverlay, exportCopied, openExportOverlay, copyExportText,
+            changeLogData, orderPlanChangeLogs, bookingChangeLogs, hasAnyChangeLogs, changeLogOpen, clOrderPlanOpen, clBookingOpen,
         };
     },
 };
@@ -1496,4 +1663,108 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .bd-warn-banner { background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; padding: 8px 12px; border-radius: 4px; font-size: 12px; margin-bottom: 8px; }
 .pipe-card--warn { border: 1px solid #fca5a5; }
 .btn-action--confirm { background: $amber; color: $white; &:hover { background: darken($amber, 8%); } }
+
+/* ── Change Log section ── */
+.ops-changelog-section {
+    border-top: 1px solid #e5e7eb;
+    margin-top: 8px;
+}
+.ops-changelog-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 10px 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b7280;
+    &:hover { color: #374151; }
+}
+.ops-changelog-chevron {
+    transition: transform 0.15s;
+    &.is-open { transform: rotate(90deg); }
+}
+.ops-changelog-wrap {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.25s ease;
+    &.is-open { grid-template-rows: 1fr; }
+}
+.ops-changelog-inner {
+    overflow: hidden;
+    min-height: 0;
+}
+.ops-cl-entry {
+    padding: 8px 14px;
+    border-bottom: 1px solid #f3f4f6;
+    &:last-child { border-bottom: none; }
+}
+.ops-cl-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 2px;
+}
+.ops-cl-category {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b7280;
+}
+.ops-cl-action {
+    flex: 1;
+    font-size: 12px;
+    font-weight: 500;
+    color: #374151;
+}
+.ops-cl-time {
+    font-size: 11px;
+    color: #9ca3af;
+    white-space: nowrap;
+}
+.ops-cl-desc {
+    font-size: 12px;
+    color: #6b7280;
+    line-height: 1.4;
+}
+.ops-cl-sub {
+    border-bottom: 1px solid #f3f4f6;
+    &:last-child { border-bottom: none; }
+}
+.ops-cl-sub-toggle {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    width: 100%;
+    padding: 8px 14px;
+    background: #f9fafb;
+    border: none;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    &:hover { color: #374151; }
+}
+.ops-cl-sub-chevron {
+    transition: transform 0.15s;
+    &.is-open { transform: rotate(90deg); }
+}
+.ops-cl-sub-wrap {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.25s ease;
+    &.is-open { grid-template-rows: 1fr; }
+}
+.ops-cl-sub-inner {
+    overflow: hidden;
+    min-height: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
 </style>

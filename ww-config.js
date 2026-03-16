@@ -16,6 +16,7 @@ export default {
                     'orderplanDeliveriesData',
                     'orderplanAttBookingsData',
                     'orderplanLinesData',
+                    'changeLogData',
                 ],
             },
             {
@@ -50,6 +51,7 @@ export default {
                 value: {
                     booking_item_id: null,
                     new_status: null,
+                    change_log: { id: null, timestamp: null, category: null, action: null, description: null, connection: null },
                 },
             },
             default: true,
@@ -62,6 +64,7 @@ export default {
                     batch_key: null,
                     line_ids: [],
                     bd_number: null,
+                    change_log: { id: null, timestamp: null, category: null, action: null, description: null, connection: null },
                 },
             },
             default: false,
@@ -74,6 +77,7 @@ export default {
                     batch_key: null,
                     line_ids: [],
                     do_folder: null,
+                    change_log: { id: null, timestamp: null, category: null, action: null, description: null, connection: null },
                 },
             },
             default: false,
@@ -81,37 +85,37 @@ export default {
         {
             name: 'onSaveOrderPlan',
             label: { en: 'On Save Order Plan' },
-            event: { value: {} },
+            event: { value: { change_log: { id: null, timestamp: null, category: null, action: null, description: null, connection: null } } },
             default: false,
         },
         {
             name: 'onSubmitOrderPlan',
             label: { en: 'On Submit Order Plan' },
-            event: { value: {} },
+            event: { value: { change_log: { id: null, timestamp: null, category: null, action: null, description: null, connection: null } } },
             default: false,
         },
         {
             name: 'onDeleteOrderPlan',
             label: { en: 'On Delete Order Plan' },
-            event: { value: { headerId: null, opid: null } },
+            event: { value: { headerId: null, opid: null, change_log: { id: null, timestamp: null, category: null, action: null, description: null, connection: null } } },
             default: false,
         },
         {
             name: 'onUnsubmitOrderPlan',
             label: { en: 'On Unsubmit Order Plan' },
-            event: { value: { headerId: null, opid: null, status: 'Draft' } },
+            event: { value: { headerId: null, opid: null, status: 'Draft', change_log: { id: null, timestamp: null, category: null, action: null, description: null, connection: null } } },
             default: false,
         },
         {
             name: 'onUnsetBdNumber',
             label: { en: 'On Unset BD Number' },
-            event: { value: { batch_key: null, line_ids: [] } },
+            event: { value: { batch_key: null, line_ids: [], change_log: { id: null, timestamp: null, category: null, action: null, description: null, connection: null } } },
             default: false,
         },
         {
             name: 'onUnsetDoLink',
             label: { en: 'On Unset DO Link' },
-            event: { value: { batch_key: null, line_ids: [] } },
+            event: { value: { batch_key: null, line_ids: [], change_log: { id: null, timestamp: null, category: null, action: null, description: null, connection: null } } },
             default: false,
         },
     ],
@@ -191,6 +195,19 @@ export default {
             bindingValidation: {
                 type: 'array',
                 tooltip: 'Array of orderplan_lines rows: { id, headerid, bookingitems_headerid, deliveries_headerid, customization, quantity_assigned, splitgroupid, labor, mockup_link }',
+            },
+            /* wwEditor:end */
+        },
+        changeLogData: {
+            label: { en: 'Change Log Data' },
+            type: 'ObjectList',
+            section: 'settings',
+            bindable: true,
+            defaultValue: [],
+            /* wwEditor:start */
+            bindingValidation: {
+                type: 'array',
+                tooltip: 'Array of change log objects: { id, timestamp, category, action, description, connection }',
             },
             /* wwEditor:end */
         },
