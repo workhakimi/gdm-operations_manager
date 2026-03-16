@@ -624,7 +624,7 @@ export default {
         const custSkuToLabel = {};
         const custSkuToType = {};
         for (const o of custOptions) { custSkuToLabel[o.customization_sku || ''] = o.subtype; custSkuToType[o.customization_sku || ''] = o.type; }
-        function custDisplay(val) { if (!val || val === 'NONE') return 'None'; return custSkuToLabel[val] || val; }
+        function custDisplay(val) { if (!val || val === 'NONE') return '-'; return custSkuToLabel[val] || val; }
         function custType(val) { if (!val || val === 'NONE') return 'NONE'; return custSkuToType[val] || 'NONE'; }
         const labOptions = computed(() => {
             const raw = props.content?.laborOptions;
