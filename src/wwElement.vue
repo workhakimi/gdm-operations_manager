@@ -775,7 +775,9 @@ export default {
             for (const line of resolvedLines.value) {
                 if (line._bookingItem?.status === 'Released') continue;
                 const type = custType(line.customization);
-                const key = `${line.deliveries_headerid}::${type}`;
+                const bd = line.bd_number || '';
+                const keySuffix = bd ? bd : (line._bookingItem?.headerid || line.bookingitems_headerid || '_unknown');
+                const key = `${line.deliveries_headerid}::${type}::${bd ? 'bd:' + bd : 'bk:' + keySuffix}`;
                 if (!batchMap[key]) {
                     batchMap[key] = { key, deliveries_headerid: line.deliveries_headerid, customizationType: type, deliveryLabel: line._delivery?.label || 'Unknown', delivery: line._delivery || null, bd_number: '', do_folder: '', labors: [], items: [], _laborSet: new Set(), _bdNumbers: [], _doFolders: [] };
                 }
