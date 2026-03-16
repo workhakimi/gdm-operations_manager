@@ -624,7 +624,7 @@ export default {
         const custSkuToLabel = {};
         const custSkuToType = {};
         for (const o of custOptions) { custSkuToLabel[o.customization_sku || ''] = o.subtype; custSkuToType[o.customization_sku || ''] = o.type; }
-        function custDisplay(val) { if (!val || val === 'NONE') return '-'; return custSkuToLabel[val] || val; }
+        function custDisplay(val) { if (!val) return '-'; return custSkuToLabel[val] || val; }
         function custType(val) { if (!val || val === 'NONE') return 'NONE'; return custSkuToType[val] || 'NONE'; }
         const labOptions = computed(() => {
             const raw = props.content?.laborOptions;
@@ -724,7 +724,7 @@ export default {
                 if (!l.deliveries_headerid) return false;
                 if (!l.customization) return false;
                 if (!l.labor) return false;
-                if (l.customization && l.customization !== 'None' && !l.mockup_link) return false;
+                if (l.customization && l.customization !== 'NONE' && !l.mockup_link) return false;
             }
             return true;
         });
@@ -1280,11 +1280,11 @@ export default {
                         updated_at: now,
                         bookingitems_headerid: biId,
                         deliveries_headerid: delUidToId[alloc.deliveries_uid] || null,
-                        customization: (alloc.customization === 'NONE') ? null : (alloc.customization || null),
+                        customization: alloc.customization || null,
                         quantity_assigned: parseInt(alloc.quantity_assigned) || 0,
                         splitgroupid: alloc.splitgroupid || null,
                         mockup_link: alloc.mockup_link || null,
-                        labor: (alloc.labor === 'none') ? null : (alloc.labor || null),
+                        labor: alloc.labor || null,
                         bd_number: preserveBd ? alloc._existingBdNumber : null,
                     });
                 }

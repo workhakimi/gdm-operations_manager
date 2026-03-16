@@ -283,7 +283,7 @@ export default {
             section: 'settings',
             bindable: true,
             defaultValue: [
-                { value: '', label: 'None' },
+                { value: 'none', label: 'None' },
                 { value: 'sleeving', label: 'Box Sleeving' },
                 { value: 'giftbox', label: 'Standard Gift Box' },
                 { value: 'giftbox_addons', label: 'Gift Box + Addons' },
