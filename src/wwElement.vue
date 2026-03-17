@@ -501,21 +501,17 @@
                     </div>
                 </section>
             </div>
-            <!-- ═══ ADD NOTE ═══ -->
-            <div v-if="currentHeader" class="ops-note-section">
-                <div class="ops-note-input-row">
-                    <input type="text" class="ops-note-input" v-model="noteText" placeholder="Add a note..." @keyup.enter="handleAddNote" />
-                    <button type="button" class="btn-action btn-action--sm" :disabled="!noteText.trim()" @click="handleAddNote">Add</button>
-                </div>
-            </div>
-
             <!-- ═══ CHANGE LOG ═══ -->
-            <div v-if="currentHeader && hasAnyChangeLogs" class="ops-changelog-section">
+            <div v-if="currentHeader" class="ops-changelog-section">
                 <button type="button" class="ops-changelog-toggle" @click="changeLogOpen = !changeLogOpen">
                     <svg class="ops-changelog-chevron" :class="{ 'is-open': changeLogOpen }" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 3L7.5 6L4.5 9"/></svg>
                     <span>Change Log</span>
                 </button>
                 <div class="ops-changelog-wrap" :class="{ 'is-open': changeLogOpen }">
+                    <div class="ops-note-input-row">
+                        <input type="text" class="ops-note-input" v-model="noteText" placeholder="Add a note..." @keyup.enter="handleAddNote" />
+                        <button type="button" class="btn-action btn-action--sm" :disabled="!noteText.trim()" @click="handleAddNote">Add</button>
+                    </div>
                     <div class="ops-changelog-inner">
                         <div v-if="orderPlanChangeLogs.length" class="ops-cl-sub">
                             <button type="button" class="ops-cl-sub-toggle" @click="clOrderPlanOpen = !clOrderPlanOpen">
