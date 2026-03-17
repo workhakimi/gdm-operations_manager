@@ -456,7 +456,7 @@
                                                         <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
                                                     </div>
                                                     <div v-else class="input-with-btn">
-                                                        <div class="prefixed-input"><span class="prefixed-input-label">BD-</span><input type="text" class="inline-input" :ref="el => setBdRef(batch.key, el)" :value="stripBdPrefix(batch.bd_number)" placeholder="Number" /></div>
+                                                        <input type="text" class="inline-input" :ref="el => setBdRef(batch.key, el)" :value="batch.bd_number" placeholder="BD number" />
                                                         <button type="button" class="btn-confirm" @click="handleSetBdNumber(batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
                                                         <button v-if="batch.bd_number" type="button" class="btn-cancel" @click="stopEditing('bd', batch.key)" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
                                                         <button v-if="batch.bd_number" type="button" class="btn-icon btn-icon--danger" @click="handleUnsetBdNumber(batch.key)" title="Clear BD#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -857,13 +857,11 @@ export default {
         function startEditing(field, key) { editingFields[`${field}::${key}`] = true; }
         function stopEditing(field, key) { delete editingFields[`${field}::${key}`]; }
 
-        function stripBdPrefix(val) { return (val || '').replace(/^BD-?/i, ''); }
 
         function handleSetBdNumber(batchKey) {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const batch = pipelineBatches.value.find(b => b.key === batchKey); if (!batch) return;
-            const raw = bdRefs[batchKey]?.value || '';
-            const value = raw ? 'BD-' + raw : '';
+            const value = bdRefs[batchKey]?.value || '';
             const h = currentHeader.value;
             const opid = h?.opid || '-';
             dispatchAction('bd_number', 'onSetBdNumber', {
@@ -1467,7 +1465,7 @@ export default {
             resolvedLines, linesForDelivery, unassignedLines, isSplit, canSubmit, canSaveForm, pipelineBatches, pipelineDeliveryGroups,
             activeView, confirmAction, confirmOrDo,
             getTeammateName, formatDate, statusKey, laborDisplay,
-            handleStatusChange, handleSetBdNumber, handleSetDoLink, stripBdPrefix,
+            handleStatusChange, handleSetBdNumber, handleSetDoLink,
             setBdRef, setDoRef, isEditing, startEditing, stopEditing,
             handleRetry, handleUnsetBdNumber, handleUnsetDoLink, pendingAction, actionFailed, actionSuccess, actionFailedLabel,
             // Order Plan Edit
