@@ -434,7 +434,7 @@
                                 <thead><tr><th></th><th>SKU</th><th>Model</th><th>Color</th><th>Qty</th><th>Status</th><th>BD#</th><th>Customization</th><th>DO Folder</th></tr></thead>
                                 <tbody>
                                     <template v-for="batch in group.batches" :key="batch.key">
-                                        <tr class="batch-header-row"><td colspan="9"><span class="batch-type-tag">{{ batch.customizationType }}</span></td></tr>
+                                        <tr class="batch-header-row"><td colspan="9"><span class="batch-type-tag" :class="'cust--' + batch.customizationType.toLowerCase().replace(/\+/g, '-')">{{ batch.customizationType }}</span></td></tr>
                                         <tr v-for="(item, itemIdx) in batch.items" :key="item.lineId" :class="{ 'batch-first': itemIdx === 0 }">
                                             <td class="cell-img"><img v-if="item.imagelink" :src="item.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
                                             <td class="cell-mono">{{ item.sku }}</td>
@@ -456,7 +456,7 @@
                                                         <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
                                                     </div>
                                                     <div v-else class="input-with-btn">
-                                                        <input type="text" class="inline-input" :ref="el => setBdRef(batch.key, el)" :value="batch.bd_number" placeholder="BD#" />
+                                                        <div class="prefixed-input"><span class="prefixed-input-label">BD-</span><input type="text" class="inline-input" :ref="el => setBdRef(batch.key, el)" :value="stripBdPrefix(batch.bd_number)" placeholder="Number" /></div>
                                                         <button type="button" class="btn-confirm" @click="handleSetBdNumber(batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
                                                         <button v-if="batch.bd_number" type="button" class="btn-cancel" @click="stopEditing('bd', batch.key)" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
                                                         <button v-if="batch.bd_number" type="button" class="btn-icon btn-icon--danger" @click="handleUnsetBdNumber(batch.key)" title="Clear BD#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -856,10 +856,13 @@ export default {
         function startEditing(field, key) { editingFields[`${field}::${key}`] = true; }
         function stopEditing(field, key) { delete editingFields[`${field}::${key}`]; }
 
+        function stripBdPrefix(val) { return (val || '').replace(/^BD-?/i, ''); }
+
         function handleSetBdNumber(batchKey) {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const batch = pipelineBatches.value.find(b => b.key === batchKey); if (!batch) return;
-            const value = bdRefs[batchKey]?.value || '';
+            const raw = bdRefs[batchKey]?.value || '';
+            const value = raw ? 'BD-' + raw : '';
             const h = currentHeader.value;
             const opid = h?.opid || '-';
             dispatchAction('bd_number', 'onSetBdNumber', {
@@ -1463,7 +1466,7 @@ export default {
             resolvedLines, linesForDelivery, unassignedLines, isSplit, canSubmit, canSaveForm, pipelineBatches, pipelineDeliveryGroups,
             activeView, confirmAction, confirmOrDo,
             getTeammateName, formatDate, statusKey, laborDisplay,
-            handleStatusChange, handleSetBdNumber, handleSetDoLink,
+            handleStatusChange, handleSetBdNumber, handleSetDoLink, stripBdPrefix,
             setBdRef, setDoRef, isEditing, startEditing, stopEditing,
             handleRetry, handleUnsetBdNumber, handleUnsetDoLink, pendingAction, actionFailed, actionSuccess, actionFailedLabel,
             // Order Plan Edit
@@ -1572,6 +1575,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
     border: 1px solid $gray-200;
     border-radius: 4px;
     overflow: hidden;
+    .inline-input { border: none; max-width: 70px; &:focus { box-shadow: none; } }
     .prefixed-input-label {
         padding: 4px 8px;
         font-size: 12px;
@@ -1802,6 +1806,10 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .batch-first td { border-top: 2px solid var(--c-batch-sep, $gray-200); }
 .batch-header-row td { padding: 6px 10px; background: $gray-100; border-bottom: 1px solid $gray-200; text-align: right; }
 .batch-type-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; background: #e2e8f0; padding: 2px 8px; border-radius: 3px; }
+.batch-type-tag.cust--uv { background: #dbeafe; color: #1d4ed8; }
+.batch-type-tag.cust--laser { background: #ede9fe; color: #6d28d9; }
+.batch-type-tag.cust--uv-laser { background: linear-gradient(135deg, #dbeafe, #ede9fe); color: #4338ca; }
+.batch-type-tag.cust--none { background: #e2e8f0; color: #475569; }
 .pipe-table tbody tr:first-child td { border-top: none; }
 .cell-batch { vertical-align: middle; background: $gray-50; border-left: 1px solid $gray-200; padding: 6px 10px; }
 .thumb-sm { width: 28px; height: 28px; object-fit: cover; display: block; }
