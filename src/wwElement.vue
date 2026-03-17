@@ -1649,9 +1649,9 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .toggle-btn--active { color: $blue; border-bottom-color: $blue; }
 
 /* ═══ EDIT BAR ═══ */
-.edit-bar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: $white; border-bottom: 1px solid $gray-200; }
+.edit-bar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: $white; border-bottom: 1px solid $gray-200; position: relative; z-index: 11; }
 .btn-action {
-    padding: 6px 14px; font-size: 11px; font-weight: 600; font-family: $font; border: none; cursor: pointer; transition: all 0.15s ease;
+    padding: 6px 14px; font-size: 11px; font-weight: 600; font-family: $font; border: none; border-radius: 4px; cursor: pointer; transition: all 0.15s ease;
 }
 .btn-action--primary { background: #1e293b; color: $white; &:hover { background: #334155; } }
 .btn-action--submit { background: $green; color: $white; &:hover { background: darken($green, 5%); } }
