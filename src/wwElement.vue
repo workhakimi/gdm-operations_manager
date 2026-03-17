@@ -218,29 +218,9 @@
                                     </colgroup>
                                     <thead><tr><th></th><th>SKU</th><th>Model</th><th>Color</th><th class="col-left">Qty</th><th>Split</th><th>Customization</th><th>Labor</th><th>Status</th><th>Mockup</th></tr></thead>
                                     <tbody>
-                                        <template v-if="groupedLinesForDelivery(del.id)">
-                                            <template v-for="bg in groupedLinesForDelivery(del.id)" :key="bg.bhId">
-                                                <tr class="booking-subheader-row"><td colspan="10"><span class="booking-subheader-label">{{ bg.bookingNumber }}<template v-if="bg.bookingTitle"> – {{ bg.bookingTitle }}</template></span></td></tr>
-                                                <tr v-for="line in bg.items" :key="line.id">
-                                                    <td class="cell-img"><img v-if="line._inv?.imagelink" :src="line._inv.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
-                                                    <td class="cell-mono">{{ line._bookingItem?.sku || '-' }}</td>
-                                                    <td>{{ line._inv?.model || 'Unknown' }}</td>
-                                                    <td>{{ line._inv?.color || '-' }}</td>
-                                                    <td class="col-left cell-mono">{{ line.quantity_assigned }}/{{ line._bookingItem?.quantity || '?' }}<span v-if="!line.quantity_assigned || line.quantity_assigned <= 0" class="req">*</span></td>
-                                                    <td><span v-if="isSplit(line)" class="split-tag">Split</span><span v-else class="cell-muted">-</span></td>
-                                                    <td>{{ custDisplay(line.customization) }}<span v-if="!line.customization" class="req">*</span></td>
-                                                    <td>{{ laborDisplay(line.labor) || '-' }}<span v-if="!line.labor" class="req">*</span></td>
-                                                    <td>
-                                                        <select class="status-select" :class="'ss--' + statusKey(line._bookingItem?.status)" :value="line._bookingItem?.status || 'Booked'" @change="handleStatusChange(line.bookingitems_headerid, $event.target.value)">
-                                                            <option value="Booked">Booked</option><option value="Issue Raised">Issue Raised</option><option value="Processing">Processing</option><option value="Delivered">Delivered</option>
-                                                        </select>
-                                                    </td>
-                                                    <td><a v-if="line.mockup_link" :href="line.mockup_link" target="_blank" class="link">Mockup</a><span v-else class="cell-muted">-</span></td>
-                                                </tr>
-                                            </template>
-                                        </template>
-                                        <template v-else>
-                                            <tr v-for="line in linesForDelivery(del.id)" :key="line.id">
+                                        <template v-for="bg in groupedLinesForDelivery(del.id)" :key="bg.bhId">
+                                            <tr class="booking-subheader-row"><td colspan="10"><span class="booking-subheader-label">{{ bg.bookingNumber }}<template v-if="bg.bookingTitle"> – {{ bg.bookingTitle }}</template></span></td></tr>
+                                            <tr v-for="line in bg.items" :key="line.id">
                                                 <td class="cell-img"><img v-if="line._inv?.imagelink" :src="line._inv.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
                                                 <td class="cell-mono">{{ line._bookingItem?.sku || '-' }}</td>
                                                 <td>{{ line._inv?.model || 'Unknown' }}</td>
@@ -457,128 +437,71 @@
                                 <thead><tr><th></th><th>SKU</th><th>Model</th><th>Color</th><th>Qty</th><th>Status</th><th>BD#</th><th>Customization</th><th>DO Folder</th></tr></thead>
                                 <tbody>
                                     <template v-for="batch in group.batches" :key="batch.key">
-                                        <tr class="batch-header-row"><td colspan="9"><span class="batch-total-qty">{{ batch.totalQty }}</span><span class="batch-type-tag" :class="'cust--' + batch.customizationType.toLowerCase().replace(/\+/g, '-')">{{ batch.customizationType }}</span><span v-if="batch.bookingInfo.length === 1" class="batch-booking-label">{{ batch.bookingInfo[0].bookingnumber }}<template v-if="batch.bookingInfo[0].bookingtitle"> – {{ batch.bookingInfo[0].bookingtitle }}</template></span></td></tr>
-                                        <!-- Multi-booking: sub-grouped with headers -->
-                                        <template v-if="batch.bookingGroups">
-                                            <template v-for="(bg, bgIdx) in batch.bookingGroups" :key="bg.bhId">
-                                                <tr class="booking-subheader-row"><td colspan="9"><span class="booking-subheader-label">{{ bg.bookingNumber }}<template v-if="bg.bookingTitle"> – {{ bg.bookingTitle }}</template></span></td></tr>
-                                                <tr v-for="(item, itemIdx) in bg.items" :key="item.lineId">
-                                                    <td class="cell-img"><img v-if="item.imagelink" :src="item.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
-                                                    <td class="cell-mono">{{ item.sku }}</td>
-                                                    <td>{{ item.model }}</td>
-                                                    <td>{{ item.color }}</td>
-                                                    <td class="cell-mono" style="white-space:nowrap">{{ item.qtyDisplay }}</td>
-                                                    <td><span class="status-tag" :class="'st--' + statusKey(item.status)">{{ item.status }}</span></td>
-                                                    <!-- BD# cell: full edit UI on first group, read-only on subsequent -->
-                                                    <td v-if="itemIdx === 0" :rowspan="bg.items.length" class="cell-batch">
-                                                        <template v-if="bgIdx === 0">
-                                                            <template v-if="isDeleted">
-                                                                <span v-if="batch.bd_number" class="field-value cell-mono">{{ batch.bd_number }}</span>
-                                                                <span v-else class="cell-muted">-</span>
-                                                            </template>
-                                                            <template v-else>
-                                                                <div v-if="batch.bd_number && !isEditing('bd', batch.key)" class="field-display">
-                                                                    <span class="field-value cell-mono">{{ batch.bd_number }}</span>
-                                                                    <span v-if="batch.bdStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines missing BD#"></span>
-                                                                    <span v-if="batch.bdStatus === 'conflict'" class="status-dot status-dot--error" title="Conflicting BD numbers"></span>
-                                                                    <button type="button" class="btn-edit" @click="startEditing('bd', batch.key)" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-                                                                    <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
-                                                                </div>
-                                                                <div v-else class="input-with-btn">
-                                                                    <input type="text" class="inline-input" :ref="el => setBdRef(batch.key, el)" :value="batch.bd_number" placeholder="BD number" />
-                                                                    <button type="button" class="btn-confirm" @click="handleSetBdNumber(batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
-                                                                    <button v-if="batch.bd_number" type="button" class="btn-cancel" @click="stopEditing('bd', batch.key)" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-                                                                    <button v-if="batch.bd_number" type="button" class="btn-icon btn-icon--danger" @click="handleUnsetBdNumber(batch.key)" title="Clear BD#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-                                                                    <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
-                                                                </div>
-                                                            </template>
-                                                        </template>
-                                                        <template v-else>
-                                                            <span v-if="batch.bd_number" class="field-value cell-mono">{{ batch.bd_number }}</span>
-                                                            <span v-else class="cell-muted">-</span>
-                                                        </template>
-                                                    </td>
-                                                    <td><span>{{ item.customizationSubtype }}</span></td>
-                                                    <!-- DO cell: full edit UI on first group, read-only on subsequent -->
-                                                    <td v-if="itemIdx === 0" :rowspan="bg.items.length" class="cell-batch">
-                                                        <template v-if="bgIdx === 0">
-                                                            <template v-if="isDeleted">
-                                                                <a v-if="batch.do_folder" :href="batch.do_folder" target="_blank" class="field-value link">Open</a>
-                                                                <span v-else class="cell-muted">-</span>
-                                                            </template>
-                                                            <template v-else>
-                                                                <div v-if="batch.do_folder && !isEditing('do', batch.key)" class="field-display">
-                                                                    <a :href="batch.do_folder" target="_blank" class="field-value link">Open</a>
-                                                                    <span v-if="batch.doStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines missing DO link"></span>
-                                                                    <span v-if="batch.doStatus === 'conflict'" class="status-dot status-dot--error" title="Conflicting DO links"></span>
-                                                                    <button type="button" class="btn-edit" @click="startEditing('do', batch.key)" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-                                                                </div>
-                                                                <div v-else class="input-with-btn">
-                                                                    <input type="text" class="inline-input inline-input--wide" :ref="el => setDoRef(batch.key, el)" :value="batch.do_folder" placeholder="Paste link" />
-                                                                    <button type="button" class="btn-confirm" @click="handleSetDoLink(batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
-                                                                    <button v-if="batch.do_folder" type="button" class="btn-cancel" @click="stopEditing('do', batch.key)" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-                                                                    <button v-if="batch.do_folder" type="button" class="btn-icon btn-icon--danger" @click="handleUnsetDoLink(batch.key)" title="Clear DO Link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-                                                                </div>
-                                                            </template>
-                                                        </template>
-                                                        <template v-else>
-                                                            <a v-if="batch.do_folder" :href="batch.do_folder" target="_blank" class="field-value link">Open</a>
-                                                            <span v-else class="cell-muted">-</span>
-                                                        </template>
-                                                    </td>
-                                                </tr>
-                                            </template>
-                                        </template>
-                                        <!-- Single booking: flat rows -->
-                                        <template v-else>
-                                            <tr v-for="(item, itemIdx) in batch.items" :key="item.lineId" :class="{ 'batch-first': itemIdx === 0 }">
+                                        <tr class="batch-header-row"><td colspan="9"><span class="batch-total-qty">{{ batch.totalQty }}</span><span class="batch-type-tag" :class="'cust--' + batch.customizationType.toLowerCase().replace(/\+/g, '-')">{{ batch.customizationType }}</span></td></tr>
+                                        <template v-for="(bg, bgIdx) in batch.bookingGroups" :key="bg.bhId">
+                                            <tr class="booking-subheader-row"><td colspan="9"><span class="booking-subheader-label">{{ bg.bookingNumber }}<template v-if="bg.bookingTitle"> – {{ bg.bookingTitle }}</template></span></td></tr>
+                                            <tr v-for="(item, itemIdx) in bg.items" :key="item.lineId">
                                                 <td class="cell-img"><img v-if="item.imagelink" :src="item.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
                                                 <td class="cell-mono">{{ item.sku }}</td>
                                                 <td>{{ item.model }}</td>
                                                 <td>{{ item.color }}</td>
                                                 <td class="cell-mono" style="white-space:nowrap">{{ item.qtyDisplay }}</td>
                                                 <td><span class="status-tag" :class="'st--' + statusKey(item.status)">{{ item.status }}</span></td>
-                                                <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-batch">
-                                                    <template v-if="isDeleted">
-                                                        <span v-if="batch.bd_number" class="field-value cell-mono">{{ batch.bd_number }}</span>
-                                                        <span v-else class="cell-muted">-</span>
+                                                <!-- BD# cell: full edit UI on first group, read-only on subsequent -->
+                                                <td v-if="itemIdx === 0" :rowspan="bg.items.length" class="cell-batch">
+                                                    <template v-if="bgIdx === 0">
+                                                        <template v-if="isDeleted">
+                                                            <span v-if="displayBd(batch)" class="field-value cell-mono">{{ displayBd(batch) }}</span>
+                                                            <span v-else class="cell-muted">-</span>
+                                                        </template>
+                                                        <template v-else>
+                                                            <div v-if="displayBd(batch) && !isEditing('bd', batch.key)" class="field-display">
+                                                                <span class="field-value cell-mono">{{ displayBd(batch) }}</span>
+                                                                <span v-if="batch.bdStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines missing BD#"></span>
+                                                                <span v-if="batch.bdStatus === 'conflict'" class="status-dot status-dot--error" title="Conflicting BD numbers"></span>
+                                                                <button type="button" class="btn-edit" @click="startEditing('bd', batch.key)" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                                                                <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
+                                                            </div>
+                                                            <div v-else class="input-with-btn">
+                                                                <input type="text" class="inline-input" :ref="el => setBdRef(batch.key, el)" :value="displayBd(batch)" placeholder="BD number" style="text-transform: uppercase" />
+                                                                <button type="button" class="btn-confirm" @click="handleSetBdNumber(batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+                                                                <button v-if="displayBd(batch)" type="button" class="btn-cancel" @click="stopEditing('bd', batch.key)" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+                                                                <button v-if="displayBd(batch)" type="button" class="btn-icon btn-icon--danger" @click="handleUnsetBdNumber(batch.key)" title="Clear BD#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                                                                <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
+                                                            </div>
+                                                        </template>
                                                     </template>
                                                     <template v-else>
-                                                        <div v-if="batch.bd_number && !isEditing('bd', batch.key)" class="field-display">
-                                                            <span class="field-value cell-mono">{{ batch.bd_number }}</span>
-                                                            <span v-if="batch.bdStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines missing BD#"></span>
-                                                            <span v-if="batch.bdStatus === 'conflict'" class="status-dot status-dot--error" title="Conflicting BD numbers"></span>
-                                                            <button type="button" class="btn-edit" @click="startEditing('bd', batch.key)" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-                                                            <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
-                                                        </div>
-                                                        <div v-else class="input-with-btn">
-                                                            <input type="text" class="inline-input" :ref="el => setBdRef(batch.key, el)" :value="batch.bd_number" placeholder="BD number" />
-                                                            <button type="button" class="btn-confirm" @click="handleSetBdNumber(batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
-                                                            <button v-if="batch.bd_number" type="button" class="btn-cancel" @click="stopEditing('bd', batch.key)" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-                                                            <button v-if="batch.bd_number" type="button" class="btn-icon btn-icon--danger" @click="handleUnsetBdNumber(batch.key)" title="Clear BD#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-                                                            <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
-                                                        </div>
+                                                        <span v-if="displayBd(batch)" class="field-value cell-mono">{{ displayBd(batch) }}</span>
+                                                        <span v-else class="cell-muted">-</span>
                                                     </template>
                                                 </td>
                                                 <td><span>{{ item.customizationSubtype }}</span></td>
-                                                <td v-if="itemIdx === 0" :rowspan="batch.items.length" class="cell-batch">
-                                                    <template v-if="isDeleted">
-                                                        <a v-if="batch.do_folder" :href="batch.do_folder" target="_blank" class="field-value link">Open</a>
-                                                        <span v-else class="cell-muted">-</span>
+                                                <!-- DO cell: full edit UI on first group, read-only on subsequent -->
+                                                <td v-if="itemIdx === 0" :rowspan="bg.items.length" class="cell-batch">
+                                                    <template v-if="bgIdx === 0">
+                                                        <template v-if="isDeleted">
+                                                            <a v-if="displayDo(batch)" :href="displayDo(batch)" target="_blank" class="field-value link">Open</a>
+                                                            <span v-else class="cell-muted">-</span>
+                                                        </template>
+                                                        <template v-else>
+                                                            <div v-if="displayDo(batch) && !isEditing('do', batch.key)" class="field-display">
+                                                                <a :href="displayDo(batch)" target="_blank" class="field-value link">Open</a>
+                                                                <span v-if="batch.doStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines missing DO link"></span>
+                                                                <span v-if="batch.doStatus === 'conflict'" class="status-dot status-dot--error" title="Conflicting DO links"></span>
+                                                                <button type="button" class="btn-edit" @click="startEditing('do', batch.key)" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                                                            </div>
+                                                            <div v-else class="input-with-btn">
+                                                                <input type="text" class="inline-input inline-input--wide" :ref="el => setDoRef(batch.key, el)" :value="displayDo(batch)" placeholder="Paste link" />
+                                                                <button type="button" class="btn-confirm" @click="handleSetDoLink(batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+                                                                <button v-if="displayDo(batch)" type="button" class="btn-cancel" @click="stopEditing('do', batch.key)" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+                                                                <button v-if="displayDo(batch)" type="button" class="btn-icon btn-icon--danger" @click="handleUnsetDoLink(batch.key)" title="Clear DO Link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                                                            </div>
+                                                        </template>
                                                     </template>
                                                     <template v-else>
-                                                        <div v-if="batch.do_folder && !isEditing('do', batch.key)" class="field-display">
-                                                            <a :href="batch.do_folder" target="_blank" class="field-value link">Open</a>
-                                                            <span v-if="batch.doStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines missing DO link"></span>
-                                                            <span v-if="batch.doStatus === 'conflict'" class="status-dot status-dot--error" title="Conflicting DO links"></span>
-                                                            <button type="button" class="btn-edit" @click="startEditing('do', batch.key)" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-                                                        </div>
-                                                        <div v-else class="input-with-btn">
-                                                            <input type="text" class="inline-input inline-input--wide" :ref="el => setDoRef(batch.key, el)" :value="batch.do_folder" placeholder="Paste link" />
-                                                            <button type="button" class="btn-confirm" @click="handleSetDoLink(batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
-                                                            <button v-if="batch.do_folder" type="button" class="btn-cancel" @click="stopEditing('do', batch.key)" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-                                                            <button v-if="batch.do_folder" type="button" class="btn-icon btn-icon--danger" @click="handleUnsetDoLink(batch.key)" title="Clear DO Link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-                                                        </div>
+                                                        <a v-if="displayDo(batch)" :href="displayDo(batch)" target="_blank" class="field-value link">Open</a>
+                                                        <span v-else class="cell-muted">-</span>
                                                     </template>
                                                 </td>
                                             </tr>
@@ -808,7 +731,7 @@ export default {
                 gm[bhId].items.push(line);
             }
             const groups = Object.values(gm);
-            return groups.length ? groups : null;
+            return groups;
         }
         const unassignedLines = computed(() => {
             const deliveryIds = new Set(currentDeliveries.value.map(d => d.id));
@@ -983,11 +906,17 @@ export default {
         function startEditing(field, key) { editingFields[`${field}::${key}`] = true; }
         function stopEditing(field, key) { delete editingFields[`${field}::${key}`]; }
 
+        // Optimistic values for BD/DO so UI shows set state immediately
+        const optimisticBd = reactive({});
+        const optimisticDo = reactive({});
+        function displayBd(batch) { return batch.bd_number || optimisticBd[batch.key] || ''; }
+        function displayDo(batch) { return batch.do_folder || optimisticDo[batch.key] || ''; }
+
 
         function handleSetBdNumber(batchKey) {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const batch = pipelineBatches.value.find(b => b.key === batchKey); if (!batch) return;
-            const value = bdRefs[batchKey]?.value || '';
+            const value = (bdRefs[batchKey]?.value || '').toUpperCase();
             const h = currentHeader.value;
             const opid = h?.opid || '-';
             dispatchAction('bd_number', 'onSetBdNumber', {
@@ -999,6 +928,7 @@ export default {
                     `In Order Plan ${opid}, set BD number '${value}' for batch ${batchKey} (${batch.items.length} line(s)) by Operations in Operations Tool.`
                 ),
             });
+            if (value) optimisticBd[batchKey] = value;
             stopEditing('bd', batchKey);
         }
         function handleSetDoLink(batchKey) {
@@ -1016,6 +946,7 @@ export default {
                     `In Order Plan ${opid}, set DO folder link '${value}' for batch ${batchKey} (${batch.items.length} line(s)) by Operations in Operations Tool.`
                 ),
             });
+            if (value) optimisticDo[batchKey] = value;
             stopEditing('do', batchKey);
         }
         function handleUnsetBdNumber(batchKey) {
@@ -1031,6 +962,7 @@ export default {
                     `In Order Plan ${opid}, removed BD number for batch ${batchKey} (${batch.items.length} line(s)) by Operations in Operations Tool.`
                 ),
             });
+            delete optimisticBd[batchKey];
         }
         function handleUnsetDoLink(batchKey) {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
@@ -1045,6 +977,7 @@ export default {
                     `In Order Plan ${opid}, removed DO folder link for batch ${batchKey} (${batch.items.length} line(s)) by Operations in Operations Tool.`
                 ),
             });
+            delete optimisticDo[batchKey];
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -1600,7 +1533,7 @@ export default {
         return {
             currentHeader, currentDeliveries, attachedBookings, resolvedTeammates,
             resolvedLines, linesForDelivery, groupedLinesForDelivery, unassignedLines, isSplit, canSubmit, canSaveForm, pipelineBatches, pipelineDeliveryGroups,
-            activeView, confirmAction, confirmOrDo,
+            activeView, confirmAction, confirmOrDo, displayBd, displayDo,
             getTeammateName, formatDate, statusKey, laborDisplay,
             handleStatusChange, handleSetBdNumber, handleSetDoLink,
             setBdRef, setDoRef, isEditing, startEditing, stopEditing,
