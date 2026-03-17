@@ -118,6 +118,12 @@ export default {
             event: { value: { batch_key: null, line_ids: [], change_log: { id: null, timestamp: null, category: null, action: null, description: null, connection: null } } },
             default: false,
         },
+        {
+            name: 'onAddNote',
+            label: { en: 'On Add Note' },
+            event: { value: { change_log: { id: null, timestamp: null, category: null, action: null, description: null, connection: null } } },
+            default: false,
+        },
     ],
     properties: {
         selectedOrderPlanId: {

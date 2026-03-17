@@ -495,6 +495,14 @@
                     </div>
                 </section>
             </div>
+            <!-- ═══ ADD NOTE ═══ -->
+            <div v-if="currentHeader" class="ops-note-section">
+                <div class="ops-note-input-row">
+                    <input type="text" class="ops-note-input" v-model="noteText" placeholder="Add a note..." @keyup.enter="handleAddNote" />
+                    <button type="button" class="btn-action btn-action--sm" :disabled="!noteText.trim()" @click="handleAddNote">Add</button>
+                </div>
+            </div>
+
             <!-- ═══ CHANGE LOG ═══ -->
             <div v-if="currentHeader && hasAnyChangeLogs" class="ops-changelog-section">
                 <button type="button" class="ops-changelog-toggle" @click="changeLogOpen = !changeLogOpen">
@@ -1126,6 +1134,17 @@ export default {
             };
         }
 
+        // ── Add Note ──
+        const noteText = ref('');
+        function handleAddNote() {
+            const text = noteText.value.trim();
+            if (!text) return;
+            dispatchAction('note', 'onAddNote', {
+                change_log: buildChangeLog('Note added by Operations in Operations Tool', text),
+            });
+            noteText.value = '';
+        }
+
         function _toKLInput(iso) {
             if (!iso) return '';
             const d = new Date(iso);
@@ -1492,7 +1511,7 @@ export default {
             handleSaveOrderPlan, handleSubmitOrderPlan, handleDeleteOrderPlan, handleUnsubmitOrderPlan,
             bookingHeaderLookup,
             exportOverlay, exportCopied, openExportOverlay, copyExportText,
-            changeLogData, orderPlanChangeLogs, bookingChangeLogs, hasAnyChangeLogs, changeLogOpen, clOrderPlanOpen, clBookingOpen,
+            changeLogData, orderPlanChangeLogs, bookingChangeLogs, hasAnyChangeLogs, changeLogOpen, clOrderPlanOpen, clBookingOpen, noteText, handleAddNote,
         };
     },
 };
@@ -1887,6 +1906,12 @@ tr.booking-break > td:first-child { position: relative; }
 .btn-action--confirm { background: $amber; color: $white; &:hover { background: darken($amber, 8%); } }
 
 /* ── Change Log section ── */
+.ops-note-section { margin-top: 8px; padding: 0 10px; }
+.ops-note-input-row { display: flex; gap: 6px; align-items: center; }
+.ops-note-input { flex: 1; font-size: 12px; padding: 5px 8px; border: 1px solid #d1d5db; border-radius: 4px; outline: none; font-family: inherit; }
+.ops-note-input:focus { border-color: #93c5fd; }
+.btn-action--sm { font-size: 11px; padding: 4px 10px; border-radius: 4px; }
+
 .ops-changelog-section {
     border-top: 1px solid #e5e7eb;
     margin-top: 8px;
