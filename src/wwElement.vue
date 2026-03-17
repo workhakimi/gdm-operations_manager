@@ -462,12 +462,14 @@
                                                             <button type="button" class="btn-edit" @click="startEditing('bd', batch.key, displayBd(batch))" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
                                                             <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
                                                         </div>
-                                                        <div v-else class="input-with-btn">
-                                                            <input type="text" class="inline-input" v-model="bdInputModel[batch.key]" placeholder="BD number" style="text-transform: uppercase" @keyup.enter="handleSetBdNumber(batch.key)" />
-                                                            <button type="button" class="btn-confirm" @click="handleSetBdNumber(batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
-                                                            <button v-if="displayBd(batch)" type="button" class="btn-cancel" @click="stopEditing('bd', batch.key)" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-                                                            <button v-if="displayBd(batch)" type="button" class="btn-icon btn-icon--danger" @click="handleUnsetBdNumber(batch.key)" title="Clear BD#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-                                                            <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
+                                                        <div v-else class="input-stacked">
+                                                            <input type="text" class="inline-input inline-input--full" v-model="bdInputModel[batch.key]" placeholder="BD number" style="text-transform: uppercase" @keyup.enter="handleSetBdNumber(batch.key)" />
+                                                            <div class="input-stacked-actions">
+                                                                <button type="button" class="btn-confirm" @click="handleSetBdNumber(batch.key)" title="Set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+                                                                <button v-if="displayBd(batch)" type="button" class="btn-cancel" @click="stopEditing('bd', batch.key)" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+                                                                <button v-if="displayBd(batch)" type="button" class="btn-icon btn-icon--danger" @click="handleUnsetBdNumber(batch.key)" title="Clear BD#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                                                                <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
+                                                            </div>
                                                         </div>
                                                     </template>
                                                 </td>
@@ -485,11 +487,13 @@
                                                             <span v-if="batch.doStatus === 'conflict'" class="status-dot status-dot--error" title="Conflicting DO links"></span>
                                                             <button type="button" class="btn-edit" @click="startEditing('do', batch.key, displayDo(batch))" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
                                                         </div>
-                                                        <div v-else class="input-with-btn">
-                                                            <input type="text" class="inline-input inline-input--wide" v-model="doInputModel[batch.key]" placeholder="Paste link" @keyup.enter="handleSetDoLink(batch.key)" />
-                                                            <button type="button" class="btn-confirm" @click="handleSetDoLink(batch.key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
-                                                            <button v-if="displayDo(batch)" type="button" class="btn-cancel" @click="stopEditing('do', batch.key)" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-                                                            <button v-if="displayDo(batch)" type="button" class="btn-icon btn-icon--danger" @click="handleUnsetDoLink(batch.key)" title="Clear DO Link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                                                        <div v-else class="input-stacked">
+                                                            <input type="text" class="inline-input inline-input--full" v-model="doInputModel[batch.key]" placeholder="Paste link" @keyup.enter="handleSetDoLink(batch.key)" />
+                                                            <div class="input-stacked-actions">
+                                                                <button type="button" class="btn-confirm" @click="handleSetDoLink(batch.key)" title="Set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+                                                                <button v-if="displayDo(batch)" type="button" class="btn-cancel" @click="stopEditing('do', batch.key)" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+                                                                <button v-if="displayDo(batch)" type="button" class="btn-icon btn-icon--danger" @click="handleUnsetDoLink(batch.key)" title="Clear DO Link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                                                            </div>
                                                         </div>
                                                     </template>
                                                 </td>
@@ -1795,6 +1799,9 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 
 /* ═══ INLINE INPUT + CONFIRM BUTTON ═══ */
 .input-with-btn { display: flex; align-items: center; gap: 3px; }
+.input-stacked { display: flex; flex-direction: column; gap: 3px; }
+.input-stacked .inline-input--full { max-width: none; width: 100%; }
+.input-stacked-actions { display: flex; align-items: center; gap: 3px; }
 .inline-input {
     width: 100%; max-width: 80px; height: 26px; padding: 0 6px; border: 1px solid $gray-200;
     font-size: 11px; font-family: $font; color: $gray-900; background: $white; outline: none;
