@@ -448,51 +448,47 @@
                                                 <td>{{ item.color }}</td>
                                                 <td class="cell-mono" style="white-space:nowrap">{{ item.qtyDisplay }}</td>
                                                 <td><span class="status-tag" :class="'st--' + statusKey(item.status)">{{ item.status }}</span></td>
-                                                <!-- BD# cell -->
+                                                <!-- BD# cell (per booking group) -->
                                                 <td v-if="itemIdx === 0" :rowspan="bg.items.length" class="cell-batch">
                                                     <template v-if="isDeleted">
                                                         <span v-if="displayBd(batch)" class="field-value cell-mono">{{ displayBd(batch) }}</span>
                                                         <span v-else class="cell-muted">-</span>
                                                     </template>
                                                     <template v-else>
-                                                        <div v-if="displayBd(batch) && !isEditing('bd', batch.key)" class="field-display">
-                                                            <span class="field-value cell-mono">{{ displayBd(batch) }}</span>
-                                                            <span v-if="batch.bdStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines missing BD#"></span>
-                                                            <span v-if="batch.bdStatus === 'conflict'" class="status-dot status-dot--error" title="Conflicting BD numbers"></span>
-                                                            <button type="button" class="btn-edit" @click="startEditing('bd', batch.key, displayBd(batch))" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                                                        <div v-if="displayBdBg(batch, bg) && !isEditing('bd', batch.key + '::' + bg.bhId)" class="field-display">
+                                                            <span class="field-value cell-mono">{{ displayBdBg(batch, bg) }}</span>
+                                                            <button type="button" class="btn-edit" @click="startEditing('bd', batch.key + '::' + bg.bhId, displayBdBg(batch, bg))" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
                                                             <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
                                                         </div>
                                                         <div v-else class="input-stacked">
-                                                            <input type="text" class="inline-input inline-input--full" v-model="bdInputModel[batch.key]" placeholder="BD number" style="text-transform: uppercase" @keyup.enter="handleSetBdNumber(batch.key)" />
+                                                            <input type="text" class="inline-input inline-input--full" v-model="bdInputModel[batch.key + '::' + bg.bhId]" placeholder="BD number" style="text-transform: uppercase" @keyup.enter="handleSetBdNumber(batch.key, bg)" />
                                                             <div class="input-stacked-actions">
-                                                                <button type="button" class="btn-confirm" @click="handleSetBdNumber(batch.key)" title="Set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
-                                                                <button v-if="displayBd(batch)" type="button" class="btn-cancel" @click="stopEditing('bd', batch.key)" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-                                                                <button v-if="displayBd(batch)" type="button" class="btn-icon btn-icon--danger" @click="handleUnsetBdNumber(batch.key)" title="Clear BD#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                                                                <button type="button" class="btn-confirm" @click="handleSetBdNumber(batch.key, bg)" title="Set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+                                                                <button v-if="displayBdBg(batch, bg)" type="button" class="btn-cancel" @click="stopEditing('bd', batch.key + '::' + bg.bhId)" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+                                                                <button v-if="displayBdBg(batch, bg)" type="button" class="btn-icon btn-icon--danger" @click="handleUnsetBdNumber(batch.key, bg)" title="Clear BD#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                                                                 <button type="button" class="btn-info" @click="openExportOverlay(batch)" title="Export Order Items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
                                                             </div>
                                                         </div>
                                                     </template>
                                                 </td>
                                                 <td><span>{{ item.customizationSubtype }}</span></td>
-                                                <!-- DO cell -->
+                                                <!-- DO cell (per booking group) -->
                                                 <td v-if="itemIdx === 0" :rowspan="bg.items.length" class="cell-batch">
                                                     <template v-if="isDeleted">
                                                         <a v-if="displayDo(batch)" :href="displayDo(batch)" target="_blank" class="field-value link">Open</a>
                                                         <span v-else class="cell-muted">-</span>
                                                     </template>
                                                     <template v-else>
-                                                        <div v-if="displayDo(batch) && !isEditing('do', batch.key)" class="field-display">
-                                                            <a :href="displayDo(batch)" target="_blank" class="field-value link">Open</a>
-                                                            <span v-if="batch.doStatus === 'missing'" class="status-dot status-dot--warn" title="Some lines missing DO link"></span>
-                                                            <span v-if="batch.doStatus === 'conflict'" class="status-dot status-dot--error" title="Conflicting DO links"></span>
-                                                            <button type="button" class="btn-edit" @click="startEditing('do', batch.key, displayDo(batch))" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                                                        <div v-if="displayDoBg(batch, bg) && !isEditing('do', batch.key + '::' + bg.bhId)" class="field-display">
+                                                            <a :href="displayDoBg(batch, bg)" target="_blank" class="field-value link">Open</a>
+                                                            <button type="button" class="btn-edit" @click="startEditing('do', batch.key + '::' + bg.bhId, displayDoBg(batch, bg))" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
                                                         </div>
                                                         <div v-else class="input-stacked">
-                                                            <input type="text" class="inline-input inline-input--full" v-model="doInputModel[batch.key]" placeholder="Paste link" @keyup.enter="handleSetDoLink(batch.key)" />
+                                                            <input type="text" class="inline-input inline-input--full" v-model="doInputModel[batch.key + '::' + bg.bhId]" placeholder="Paste link" @keyup.enter="handleSetDoLink(batch.key, bg)" />
                                                             <div class="input-stacked-actions">
-                                                                <button type="button" class="btn-confirm" @click="handleSetDoLink(batch.key)" title="Set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
-                                                                <button v-if="displayDo(batch)" type="button" class="btn-cancel" @click="stopEditing('do', batch.key)" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-                                                                <button v-if="displayDo(batch)" type="button" class="btn-icon btn-icon--danger" @click="handleUnsetDoLink(batch.key)" title="Clear DO Link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                                                                <button type="button" class="btn-confirm" @click="handleSetDoLink(batch.key, bg)" title="Set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+                                                                <button v-if="displayDoBg(batch, bg)" type="button" class="btn-cancel" @click="stopEditing('do', batch.key + '::' + bg.bhId)" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+                                                                <button v-if="displayDoBg(batch, bg)" type="button" class="btn-icon btn-icon--danger" @click="handleUnsetDoLink(batch.key, bg)" title="Clear DO Link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                                                             </div>
                                                         </div>
                                                     </template>
@@ -899,82 +895,92 @@ export default {
         const bdInputModel = reactive({});
         const doInputModel = reactive({});
 
-        // Optimistic values for BD/DO so UI shows set state immediately
+        // Optimistic values for BD/DO so UI shows set state immediately (keyed per booking group)
         const optimisticBd = reactive({});
         const optimisticDo = reactive({});
         function displayBd(batch) { return batch.bd_number || optimisticBd[batch.key] || ''; }
         function displayDo(batch) { return batch.do_folder || optimisticDo[batch.key] || ''; }
+        function displayBdBg(batch, bg) { return optimisticBd[batch.key + '::' + bg.bhId] || batch.bd_number || optimisticBd[batch.key] || ''; }
+        function displayDoBg(batch, bg) { return optimisticDo[batch.key + '::' + bg.bhId] || batch.do_folder || optimisticDo[batch.key] || ''; }
 
 
-        function handleSetBdNumber(batchKey) {
+        function handleSetBdNumber(batchKey, bg) {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const batch = pipelineBatches.value.find(b => b.key === batchKey); if (!batch) return;
-            const value = (bdInputModel[batchKey] || '').toUpperCase();
+            const editKey = bg ? batchKey + '::' + bg.bhId : batchKey;
+            const lineIds = bg ? bg.items.map(i => i.lineId) : batch.items.map(i => i.lineId);
+            const value = (bdInputModel[editKey] || '').toUpperCase();
             if (!value) return;
             const h = currentHeader.value;
             const opid = h?.opid || '-';
             dispatchAction('bd_number', 'onSetBdNumber', {
                 batch_key: batchKey,
-                line_ids: batch.items.map(i => i.lineId),
+                line_ids: lineIds,
                 bd_number: value,
                 change_log: buildChangeLog(
                     'BD Number Set by Operations in Operations Tool',
-                    `In Order Plan ${opid}, set BD number '${value}' for batch ${batchKey} (${batch.items.length} line(s)) by Operations in Operations Tool.`
+                    `In Order Plan ${opid}, set BD number '${value}' for batch ${batchKey} (${lineIds.length} line(s)) by Operations in Operations Tool.`
                 ),
             });
-            optimisticBd[batchKey] = value;
-            stopEditing('bd', batchKey);
+            optimisticBd[editKey] = value;
+            stopEditing('bd', editKey);
         }
-        function handleSetDoLink(batchKey) {
+        function handleSetDoLink(batchKey, bg) {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const batch = pipelineBatches.value.find(b => b.key === batchKey); if (!batch) return;
-            const value = doInputModel[batchKey] || '';
+            const editKey = bg ? batchKey + '::' + bg.bhId : batchKey;
+            const lineIds = bg ? bg.items.map(i => i.lineId) : batch.items.map(i => i.lineId);
+            const value = doInputModel[editKey] || '';
             if (!value) return;
             const h = currentHeader.value;
             const opid = h?.opid || '-';
             dispatchAction('do_link', 'onSetDoLink', {
                 batch_key: batchKey,
-                line_ids: batch.items.map(i => i.lineId),
+                line_ids: lineIds,
                 do_folder: value,
                 change_log: buildChangeLog(
                     'DO Link Set by Operations in Operations Tool',
-                    `In Order Plan ${opid}, set DO folder link '${value}' for batch ${batchKey} (${batch.items.length} line(s)) by Operations in Operations Tool.`
+                    `In Order Plan ${opid}, set DO folder link '${value}' for batch ${batchKey} (${lineIds.length} line(s)) by Operations in Operations Tool.`
                 ),
             });
-            optimisticDo[batchKey] = value;
-            stopEditing('do', batchKey);
+            optimisticDo[editKey] = value;
+            stopEditing('do', editKey);
         }
-        function handleUnsetBdNumber(batchKey) {
+        function handleUnsetBdNumber(batchKey, bg) {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const batch = pipelineBatches.value.find(b => b.key === batchKey); if (!batch) return;
+            const editKey = bg ? batchKey + '::' + bg.bhId : batchKey;
+            const lineIds = bg ? bg.items.map(i => i.lineId) : batch.items.map(i => i.lineId);
             const h = currentHeader.value;
             const opid = h?.opid || '-';
             dispatchAction('bd_number', 'onUnsetBdNumber', {
                 batch_key: batchKey,
-                line_ids: batch.items.map(i => i.lineId),
+                line_ids: lineIds,
                 change_log: buildChangeLog(
                     'BD Number Unset by Operations in Operations Tool',
-                    `In Order Plan ${opid}, removed BD number for batch ${batchKey} (${batch.items.length} line(s)) by Operations in Operations Tool.`
+                    `In Order Plan ${opid}, removed BD number for batch ${batchKey} (${lineIds.length} line(s)) by Operations in Operations Tool.`
                 ),
             });
-            delete optimisticBd[batchKey];
-            bdInputModel[batchKey] = '';
+            delete optimisticBd[editKey];
+            bdInputModel[editKey] = '';
         }
-        function handleUnsetDoLink(batchKey) {
+        function handleUnsetDoLink(batchKey, bg) {
             /* wwEditor:start */ if (props.wwEditorState?.isEditing) return; /* wwEditor:end */
             const batch = pipelineBatches.value.find(b => b.key === batchKey); if (!batch) return;
+            const editKey = bg ? batchKey + '::' + bg.bhId : batchKey;
+            const lineIds = bg ? bg.items.map(i => i.lineId) : batch.items.map(i => i.lineId);
             const h = currentHeader.value;
             const opid = h?.opid || '-';
             dispatchAction('do_link', 'onUnsetDoLink', {
                 batch_key: batchKey,
-                line_ids: batch.items.map(i => i.lineId),
+                line_ids: lineIds,
                 change_log: buildChangeLog(
                     'DO Link Unset by Operations in Operations Tool',
-                    `In Order Plan ${opid}, removed DO folder link for batch ${batchKey} (${batch.items.length} line(s)) by Operations in Operations Tool.`
+                    `In Order Plan ${opid}, removed DO folder link for batch ${batchKey} (${lineIds.length} line(s)) by Operations in Operations Tool.`
                 ),
             });
-            delete optimisticDo[batchKey];
-            doInputModel[batchKey] = '';
+            delete optimisticDo[editKey];
+            doInputModel[editKey] = '';
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -1530,7 +1536,7 @@ export default {
         return {
             currentHeader, currentDeliveries, attachedBookings, resolvedTeammates,
             resolvedLines, linesForDelivery, groupedLinesForDelivery, unassignedLines, isSplit, canSubmit, canSaveForm, pipelineBatches, pipelineDeliveryGroups,
-            activeView, confirmAction, confirmOrDo, displayBd, displayDo,
+            activeView, confirmAction, confirmOrDo, displayBd, displayDo, displayBdBg, displayDoBg,
             getTeammateName, formatDate, statusKey, laborDisplay,
             handleStatusChange, handleSetBdNumber, handleSetDoLink,
             bdInputModel, doInputModel, isEditing, startEditing, stopEditing,
