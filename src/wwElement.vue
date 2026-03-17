@@ -218,22 +218,45 @@
                                     </colgroup>
                                     <thead><tr><th></th><th>SKU</th><th>Model</th><th>Color</th><th class="col-left">Qty</th><th>Split</th><th>Customization</th><th>Labor</th><th>Status</th><th>Mockup</th></tr></thead>
                                     <tbody>
-                                        <tr v-for="line in linesForDelivery(del.id)" :key="line.id">
-                                            <td class="cell-img"><img v-if="line._inv?.imagelink" :src="line._inv.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
-                                            <td class="cell-mono">{{ line._bookingItem?.sku || '-' }}</td>
-                                            <td>{{ line._inv?.model || 'Unknown' }}</td>
-                                            <td>{{ line._inv?.color || '-' }}</td>
-                                            <td class="col-left cell-mono">{{ line.quantity_assigned }}/{{ line._bookingItem?.quantity || '?' }}<span v-if="!line.quantity_assigned || line.quantity_assigned <= 0" class="req">*</span></td>
-                                            <td><span v-if="isSplit(line)" class="split-tag">Split</span><span v-else class="cell-muted">-</span></td>
-                                            <td>{{ custDisplay(line.customization) }}<span v-if="!line.customization" class="req">*</span></td>
-                                            <td>{{ laborDisplay(line.labor) || '-' }}<span v-if="!line.labor" class="req">*</span></td>
-                                            <td>
-                                                <select class="status-select" :class="'ss--' + statusKey(line._bookingItem?.status)" :value="line._bookingItem?.status || 'Booked'" @change="handleStatusChange(line.bookingitems_headerid, $event.target.value)">
-                                                    <option value="Booked">Booked</option><option value="Issue Raised">Issue Raised</option><option value="Processing">Processing</option><option value="Delivered">Delivered</option>
-                                                </select>
-                                            </td>
-                                            <td><a v-if="line.mockup_link" :href="line.mockup_link" target="_blank" class="link">Mockup</a><span v-else class="cell-muted">-</span></td>
-                                        </tr>
+                                        <template v-if="groupedLinesForDelivery(del.id)">
+                                            <template v-for="bg in groupedLinesForDelivery(del.id)" :key="bg.bhId">
+                                                <tr class="booking-subheader-row"><td colspan="10"><span class="booking-subheader-label">{{ bg.bookingNumber }}<template v-if="bg.bookingTitle"> – {{ bg.bookingTitle }}</template></span></td></tr>
+                                                <tr v-for="line in bg.items" :key="line.id">
+                                                    <td class="cell-img"><img v-if="line._inv?.imagelink" :src="line._inv.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
+                                                    <td class="cell-mono">{{ line._bookingItem?.sku || '-' }}</td>
+                                                    <td>{{ line._inv?.model || 'Unknown' }}</td>
+                                                    <td>{{ line._inv?.color || '-' }}</td>
+                                                    <td class="col-left cell-mono">{{ line.quantity_assigned }}/{{ line._bookingItem?.quantity || '?' }}<span v-if="!line.quantity_assigned || line.quantity_assigned <= 0" class="req">*</span></td>
+                                                    <td><span v-if="isSplit(line)" class="split-tag">Split</span><span v-else class="cell-muted">-</span></td>
+                                                    <td>{{ custDisplay(line.customization) }}<span v-if="!line.customization" class="req">*</span></td>
+                                                    <td>{{ laborDisplay(line.labor) || '-' }}<span v-if="!line.labor" class="req">*</span></td>
+                                                    <td>
+                                                        <select class="status-select" :class="'ss--' + statusKey(line._bookingItem?.status)" :value="line._bookingItem?.status || 'Booked'" @change="handleStatusChange(line.bookingitems_headerid, $event.target.value)">
+                                                            <option value="Booked">Booked</option><option value="Issue Raised">Issue Raised</option><option value="Processing">Processing</option><option value="Delivered">Delivered</option>
+                                                        </select>
+                                                    </td>
+                                                    <td><a v-if="line.mockup_link" :href="line.mockup_link" target="_blank" class="link">Mockup</a><span v-else class="cell-muted">-</span></td>
+                                                </tr>
+                                            </template>
+                                        </template>
+                                        <template v-else>
+                                            <tr v-for="line in linesForDelivery(del.id)" :key="line.id">
+                                                <td class="cell-img"><img v-if="line._inv?.imagelink" :src="line._inv.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
+                                                <td class="cell-mono">{{ line._bookingItem?.sku || '-' }}</td>
+                                                <td>{{ line._inv?.model || 'Unknown' }}</td>
+                                                <td>{{ line._inv?.color || '-' }}</td>
+                                                <td class="col-left cell-mono">{{ line.quantity_assigned }}/{{ line._bookingItem?.quantity || '?' }}<span v-if="!line.quantity_assigned || line.quantity_assigned <= 0" class="req">*</span></td>
+                                                <td><span v-if="isSplit(line)" class="split-tag">Split</span><span v-else class="cell-muted">-</span></td>
+                                                <td>{{ custDisplay(line.customization) }}<span v-if="!line.customization" class="req">*</span></td>
+                                                <td>{{ laborDisplay(line.labor) || '-' }}<span v-if="!line.labor" class="req">*</span></td>
+                                                <td>
+                                                    <select class="status-select" :class="'ss--' + statusKey(line._bookingItem?.status)" :value="line._bookingItem?.status || 'Booked'" @change="handleStatusChange(line.bookingitems_headerid, $event.target.value)">
+                                                        <option value="Booked">Booked</option><option value="Issue Raised">Issue Raised</option><option value="Processing">Processing</option><option value="Delivered">Delivered</option>
+                                                    </select>
+                                                </td>
+                                                <td><a v-if="line.mockup_link" :href="line.mockup_link" target="_blank" class="link">Mockup</a><span v-else class="cell-muted">-</span></td>
+                                            </tr>
+                                        </template>
                                     </tbody>
                                 </table>
                             </div>
@@ -776,6 +799,17 @@ export default {
         function isSplit(line) { return line.splitgroupid && (splitGroupCounts.value[line.splitgroupid] || 0) > 1; }
         const activeLines = computed(() => resolvedLines.value.filter(l => l._bookingItem?.status !== 'Released'));
         function linesForDelivery(deliveryId) { return activeLines.value.filter(l => l.deliveries_headerid === deliveryId); }
+        function groupedLinesForDelivery(deliveryId) {
+            const lines = linesForDelivery(deliveryId);
+            const gm = {};
+            for (const line of lines) {
+                const bhId = line._bookingItem?.headerid || '_none';
+                if (!gm[bhId]) { const bh = bookingHeaderLookup.value[bhId]; gm[bhId] = { bhId, bookingNumber: bh?.bookingnumber || '', bookingTitle: bh?.bookingtitle || '', items: [] }; }
+                gm[bhId].items.push(line);
+            }
+            const groups = Object.values(gm);
+            return groups.length > 1 ? groups : null;
+        }
         const unassignedLines = computed(() => {
             const deliveryIds = new Set(currentDeliveries.value.map(d => d.id));
             return activeLines.value.filter(l => !l.deliveries_headerid || !deliveryIds.has(l.deliveries_headerid));
@@ -1567,7 +1601,7 @@ export default {
 
         return {
             currentHeader, currentDeliveries, attachedBookings, resolvedTeammates,
-            resolvedLines, linesForDelivery, unassignedLines, isSplit, canSubmit, canSaveForm, pipelineBatches, pipelineDeliveryGroups,
+            resolvedLines, linesForDelivery, groupedLinesForDelivery, unassignedLines, isSplit, canSubmit, canSaveForm, pipelineBatches, pipelineDeliveryGroups,
             activeView, confirmAction, confirmOrDo,
             getTeammateName, formatDate, statusKey, laborDisplay,
             handleStatusChange, handleSetBdNumber, handleSetDoLink,
