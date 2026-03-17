@@ -170,8 +170,8 @@
                     <table class="meta-table">
                         <tbody>
                             <tr><td class="meta-label">Title<span v-if="!form.title" class="req">*</span></td><td><input type="text" class="meta-input" v-model="form.title" placeholder="Order title" /></td></tr>
-                            <tr><td class="meta-label">Quote Ref<span v-if="!form.quoteref" class="req">*</span></td><td><input type="text" class="meta-input" v-model="form.quoteref" placeholder="Q-202X-XXX" /></td></tr>
-                            <tr><td class="meta-label">Invoice Ref<span v-if="!form.invoiceref" class="req">*</span></td><td><input type="text" class="meta-input" v-model="form.invoiceref" placeholder="INV-202X-XXX" /></td></tr>
+                            <tr><td class="meta-label">Quote Ref<span v-if="!form.quoteref" class="req">*</span></td><td><div class="prefixed-input"><span class="prefixed-input-label">QU-</span><input type="text" class="meta-input" v-model="form.quoteref" placeholder="123456" /></div></td></tr>
+                            <tr><td class="meta-label">Invoice Ref<span v-if="!form.invoiceref" class="req">*</span></td><td><div class="prefixed-input"><select class="prefixed-input-select" v-model="form.invoicePrefix"><option value="LMSB">LMSB-</option><option value="STPL">STPL-</option></select><input type="text" class="meta-input" v-model="form.invoiceref" placeholder="123456" /></div></td></tr>
                             <tr><td class="meta-label">PIC (BDA)<span v-if="!form.pic_bda" class="req">*</span></td><td>
                                 <select class="meta-select" v-model="form.pic_bda">
                                     <option value="">Not assigned</option>
@@ -926,7 +926,7 @@ export default {
         const isDeleted = computed(() => (currentHeader.value?.status || '').toLowerCase() === 'deleted');
 
         const opEditMode = ref(false);
-        const form = reactive({ title: '', quoteref: '', invoiceref: '', pic_bda: '', pic_ops: '' });
+        const form = reactive({ title: '', quoteref: '', invoicePrefix: 'LMSB', invoiceref: '', pic_bda: '', pic_ops: '' });
         const formDeliveries = ref([]);
         const formAttachedBookingIds = ref([]);
         const formAllocations = reactive({}); // key: `${bookingHeaderId}::${bookingItemId}` => array of alloc objects
@@ -938,8 +938,13 @@ export default {
             const h = currentHeader.value;
             if (!h || isDeleted.value) return;
             form.title = h.title || '';
-            form.quoteref = h.quoteref || '';
-            form.invoiceref = h.invoiceref || '';
+            form.quoteref = (h.quoteref || '').replace(/^QU-?/i, '');
+            const invRaw = h.invoiceref || '';
+            if (invRaw.startsWith('STPL-')) { form.invoicePrefix = 'STPL'; form.invoiceref = invRaw.slice(5); }
+            else if (invRaw.startsWith('LMSB-')) { form.invoicePrefix = 'LMSB'; form.invoiceref = invRaw.slice(5); }
+            else if (invRaw.startsWith('STPL')) { form.invoicePrefix = 'STPL'; form.invoiceref = invRaw.slice(4); }
+            else if (invRaw.startsWith('LMSB')) { form.invoicePrefix = 'LMSB'; form.invoiceref = invRaw.slice(4); }
+            else { form.invoicePrefix = 'LMSB'; form.invoiceref = invRaw; }
             form.pic_bda = h.pic_bda || '';
             form.pic_ops = h.pic_ops || '';
 
@@ -1140,8 +1145,8 @@ export default {
                 ['Title', h.title, form.title],
                 ['PIC BDA', getTeammateName(h.pic_bda) || h.pic_bda, getTeammateName(form.pic_bda) || form.pic_bda],
                 ['PIC Ops', getTeammateName(h.pic_ops) || h.pic_ops, getTeammateName(form.pic_ops) || form.pic_ops],
-                ['Quote Ref', h.quoteref, form.quoteref],
-                ['Invoice Ref', h.invoiceref, form.invoiceref],
+                ['Quote Ref', h.quoteref, form.quoteref ? 'QU-' + form.quoteref : ''],
+                ['Invoice Ref', h.invoiceref, form.invoiceref ? form.invoicePrefix + '-' + form.invoiceref : ''],
             ];
             for (const [label, oldV, newV] of mf) {
                 const d = _diffField(label, oldV, newV);
@@ -1303,8 +1308,8 @@ export default {
                     title: form.title,
                     pic_bda: form.pic_bda || null,
                     pic_ops: form.pic_ops || null,
-                    quoteref: form.quoteref || null,
-                    invoiceref: form.invoiceref || null,
+                    quoteref: form.quoteref ? 'QU-' + form.quoteref : null,
+                    invoiceref: form.invoiceref ? form.invoicePrefix + '-' + form.invoiceref : null,
                     status: action === 'request_process' ? 'Submitted' : (h.status || 'Draft'),
                     created_at: h.created_at || null,
                     updated_at: now,
@@ -1547,6 +1552,38 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .meta-label { font-weight: 700; color: $gray-500; text-transform: uppercase; font-size: 10px; letter-spacing: 0.04em; width: 140px; white-space: nowrap; }
 .meta-input { width: 100%; padding: 4px 8px; border: 1px solid $gray-200; font-size: 12px; font-family: $font; color: $gray-900; background: $white; outline: none; &:focus { border-color: $blue; } }
 .meta-select { width: 100%; padding: 4px 8px; border: 1px solid $gray-200; font-size: 12px; font-family: $font; color: $gray-900; background: $white; outline: none; }
+.prefixed-input {
+    display: flex;
+    align-items: center;
+    border: 1px solid $gray-200;
+    border-radius: 4px;
+    overflow: hidden;
+    .prefixed-input-label {
+        padding: 4px 8px;
+        font-size: 12px;
+        font-weight: 600;
+        color: $gray-600;
+        background: $gray-100;
+        white-space: nowrap;
+        border-right: 1px solid $gray-200;
+    }
+    .prefixed-input-select {
+        padding: 4px 6px;
+        font-size: 12px;
+        font-weight: 600;
+        color: $gray-600;
+        background: $gray-100;
+        border: none;
+        border-right: 1px solid $gray-200;
+        outline: none;
+        cursor: pointer;
+    }
+    .meta-input {
+        border: none;
+        border-radius: 0;
+        &:focus { border: none; box-shadow: none; }
+    }
+}
 
 /* ═══ SHARED TABLE HELPERS ═══ */
 .col-left { text-align: left; }
