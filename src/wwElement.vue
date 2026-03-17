@@ -1107,12 +1107,18 @@ export default {
 
         function _fmtDate(iso) {
             if (!iso) return '';
-            const d = new Date(iso);
+            let normalized = iso;
+            if (!/[Z+\-]\d{2}/.test(iso.slice(10))) normalized = iso + '+08:00';
+            const d = new Date(normalized);
             if (isNaN(d.getTime())) return iso;
-            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            let hrs = d.getHours(); const ap = hrs >= 12 ? 'PM' : 'AM'; hrs = hrs % 12 || 12;
-            const min = String(d.getMinutes()).padStart(2, '0');
-            return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} ${hrs}:${min} ${ap}`;
+            try {
+                return d.toLocaleString('en-GB', { timeZone: 'Asia/Kuala_Lumpur', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+            } catch (e) {
+                const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                let hrs = d.getHours(); const ap = hrs >= 12 ? 'PM' : 'AM'; hrs = hrs % 12 || 12;
+                const min = String(d.getMinutes()).padStart(2, '0');
+                return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} ${hrs}:${min} ${ap}`;
+            }
         }
 
         function _diffField(label, oldVal, newVal) {
