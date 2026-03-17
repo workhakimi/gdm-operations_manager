@@ -808,7 +808,7 @@ export default {
                 gm[bhId].items.push(line);
             }
             const groups = Object.values(gm);
-            return groups.length > 1 ? groups : null;
+            return groups.length ? groups : null;
         }
         const unassignedLines = computed(() => {
             const deliveryIds = new Set(currentDeliveries.value.map(d => d.id));
@@ -907,8 +907,8 @@ export default {
             const batches = Object.values(batchMap);
             for (const batch of batches) {
                 batch.bdStatus = getFieldStatus(batch._bdNumbers); batch.doStatus = getFieldStatus(batch._doFolders); batch.totalQty = batch.items.reduce((s, i) => s + i.qty, 0); batch.bookingInfo = Array.from(batch._bookingHeaderIds).map(id => bookingHeaderLookup.value[id]).filter(Boolean);
-                // Build booking sub-groups
-                if (batch.bookingInfo.length > 1) {
+                // Build booking sub-groups (always, even for single booking)
+                {
                     const gm = {};
                     for (const item of batch.items) {
                         const bhId = item._bhId || '_none';
@@ -916,8 +916,6 @@ export default {
                         gm[bhId].items.push(item);
                     }
                     batch.bookingGroups = Object.values(gm);
-                } else {
-                    batch.bookingGroups = null;
                 }
             }
             return batches;
