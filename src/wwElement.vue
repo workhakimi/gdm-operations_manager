@@ -434,9 +434,9 @@
                                 <thead><tr><th></th><th>SKU</th><th>Model</th><th>Color</th><th>Qty</th><th>Status</th><th>BD#</th><th>Customization</th><th>DO Folder</th></tr></thead>
                                 <tbody>
                                     <template v-for="batch in group.batches" :key="batch.key">
-                                        <tr class="batch-header-row"><td colspan="9"><span class="batch-total-qty">{{ batch.totalQty }}</span><span class="batch-type-tag" :class="'cust--' + batch.customizationType.toLowerCase().replace(/\+/g, '-')">{{ batch.customizationType }}</span><span v-if="batch.bookingInfo.length" class="batch-booking-label"><span v-for="(bk, bkIdx) in batch.bookingInfo" :key="bk.id">{{ bkIdx > 0 ? ' · ' : '' }}{{ bk.bookingnumber }}<template v-if="bk.bookingtitle"> – {{ bk.bookingtitle }}</template></span></span></td></tr>
-                                        <tr v-for="(item, itemIdx) in batch.items" :key="item.lineId" :class="{ 'batch-first': itemIdx === 0 }">
-                                            <td class="cell-img"><img v-if="item.imagelink" :src="item.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
+                                        <tr class="batch-header-row"><td colspan="9"><span class="batch-total-qty">{{ batch.totalQty }}</span><span class="batch-type-tag" :class="'cust--' + batch.customizationType.toLowerCase().replace(/\+/g, '-')">{{ batch.customizationType }}</span><span v-if="batch.bookingInfo.length === 1" class="batch-booking-label">{{ batch.bookingInfo[0].bookingnumber }}<template v-if="batch.bookingInfo[0].bookingtitle"> – {{ batch.bookingInfo[0].bookingtitle }}</template></span></td></tr>
+                                        <tr v-for="(item, itemIdx) in batch.items" :key="item.lineId" :class="{ 'batch-first': itemIdx === 0, 'booking-break': item._bookingBreak && itemIdx > 0 }">
+                                            <td class="cell-img"><span v-if="item._bookingBreak && itemIdx > 0" class="booking-break-label">{{ item._bookingLabel }}</span><img v-if="item.imagelink" :src="item.imagelink" class="thumb-sm" /><span v-else class="cell-muted">-</span></td>
                                             <td class="cell-mono">{{ item.sku }}</td>
                                             <td>{{ item.model }}</td>
                                             <td>{{ item.color }}</td>
@@ -788,10 +788,24 @@ export default {
                 if (!batch.do_folder && line.do_folder) batch.do_folder = line.do_folder;
                 if (line._bookingItem?.headerid) batch._bookingHeaderIds.add(line._bookingItem.headerid);
                 if (line.labor) { const label = laborDisplay(line.labor); if (label && !batch._laborSet.has(label)) { batch._laborSet.add(label); batch.labors.push(label); } }
-                batch.items.push({ lineId: line.id, sku: line._bookingItem?.sku || '-', imagelink: line._inv?.imagelink || '', model: line._inv?.model || 'Unknown', color: line._inv?.color || '-', qty: line.quantity_assigned || 0, qtyDisplay: `${line.quantity_assigned || 0}/${line._bookingItem?.quantity || '?'}`, status: line._bookingItem?.status || 'Booked', customizationSubtype: custDisplay(line.customization) });
+                batch.items.push({ lineId: line.id, sku: line._bookingItem?.sku || '-', imagelink: line._inv?.imagelink || '', model: line._inv?.model || 'Unknown', color: line._inv?.color || '-', qty: line.quantity_assigned || 0, qtyDisplay: `${line.quantity_assigned || 0}/${line._bookingItem?.quantity || '?'}`, status: line._bookingItem?.status || 'Booked', customizationSubtype: custDisplay(line.customization), _bhId: line._bookingItem?.headerid || '' });
             }
             const batches = Object.values(batchMap);
-            for (const batch of batches) { batch.bdStatus = getFieldStatus(batch._bdNumbers); batch.doStatus = getFieldStatus(batch._doFolders); batch.totalQty = batch.items.reduce((s, i) => s + i.qty, 0); batch.bookingInfo = Array.from(batch._bookingHeaderIds).map(id => bookingHeaderLookup.value[id]).filter(Boolean); }
+            for (const batch of batches) {
+                batch.bdStatus = getFieldStatus(batch._bdNumbers); batch.doStatus = getFieldStatus(batch._doFolders); batch.totalQty = batch.items.reduce((s, i) => s + i.qty, 0); batch.bookingInfo = Array.from(batch._bookingHeaderIds).map(id => bookingHeaderLookup.value[id]).filter(Boolean);
+                // Tag items with booking labels for visual separation
+                if (batch.bookingInfo.length > 1) {
+                    let lastBhId = null;
+                    for (const item of batch.items) {
+                        if (item._bhId !== lastBhId) {
+                            const bh = bookingHeaderLookup.value[item._bhId];
+                            item._bookingBreak = true;
+                            item._bookingLabel = bh ? `${bh.bookingnumber}${bh.bookingtitle ? ' – ' + bh.bookingtitle : ''}` : '';
+                            lastBhId = item._bhId;
+                        }
+                    }
+                }
+            }
             return batches;
         });
 
@@ -1807,6 +1821,9 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .batch-total-qty { font-size: 11px; font-weight: 700; color: #334155; margin-right: 6px; }
 .batch-type-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; background: #e2e8f0; padding: 2px 8px; border-radius: 3px; }
 .batch-booking-label { font-size: 10px; color: #94a3b8; margin-left: 8px; font-weight: 400; }
+tr.booking-break > td { border-top: 2px solid #cbd5e1; }
+tr.booking-break > td:first-child { position: relative; }
+.booking-break-label { position: absolute; top: -8px; left: 6px; font-size: 9px; font-weight: 600; color: #64748b; background: #fff; padding: 0 4px; white-space: nowrap; line-height: 1; z-index: 1; }
 .batch-type-tag.cust--uv { background: #dbeafe; color: #1d4ed8; }
 .batch-type-tag.cust--laser { background: #ede9fe; color: #6d28d9; }
 .batch-type-tag.cust--uv-laser { background: linear-gradient(135deg, #dbeafe, #ede9fe); color: #4338ca; }
