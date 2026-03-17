@@ -438,6 +438,7 @@
                                 <tbody>
                                     <template v-for="batch in group.batches" :key="batch.key">
                                         <tr class="batch-header-row"><td colspan="9"><span class="batch-total-qty">{{ batch.totalQty }}</span><span class="batch-type-tag" :class="'cust--' + batch.customizationType.toLowerCase().replace(/\+/g, '-')">{{ batch.customizationType }}</span></td></tr>
+                                        <tr v-if="displayBd(batch)" class="bd-subheader-row"><td colspan="9"><span class="bd-subheader-label">{{ displayBd(batch) }}</span></td></tr>
                                         <template v-for="bg in batch.bookingGroups" :key="bg.bhId">
                                             <tr class="booking-subheader-row"><td colspan="9"><span class="booking-subheader-label">{{ bg.bookingNumber }}<template v-if="bg.bookingTitle"> – {{ bg.bookingTitle }}</template></span></td></tr>
                                             <tr v-for="(item, itemIdx) in bg.items" :key="item.lineId">
@@ -1869,7 +1870,9 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
 .batch-total-qty { font-size: 11px; font-weight: 700; color: #334155; margin-right: 6px; }
 .batch-type-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; background: #e2e8f0; padding: 2px 8px; border-radius: 3px; }
 .batch-booking-label { font-size: 10px; color: #94a3b8; margin-left: 8px; font-weight: 400; }
-.booking-subheader-row td { padding: 4px 10px; background: #f8fafc; border-bottom: 1px solid $gray-200; border-top: 1px solid #cbd5e1; }
+.bd-subheader-row td { padding: 3px 10px; background: #f1f5f9; border-bottom: 1px solid $gray-200; }
+.bd-subheader-label { font-size: 11px; font-weight: 700; color: #334155; letter-spacing: 0.3px; }
+.booking-subheader-row td { padding: 4px 10px; background: #f8fafc; border-bottom: 1px solid $gray-200; border-top: 1px solid #e2e8f0; }
 .booking-subheader-label { font-size: 10px; font-weight: 600; color: #475569; }
 .batch-type-tag.cust--uv { background: #dbeafe; color: #1d4ed8; }
 .batch-type-tag.cust--laser { background: #ede9fe; color: #6d28d9; }
