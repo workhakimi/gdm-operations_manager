@@ -1575,7 +1575,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
     border: 1px solid $gray-200;
     border-radius: 4px;
     overflow: hidden;
-    .inline-input { border: none; max-width: 70px; &:focus { box-shadow: none; } }
+    .inline-input { border: none; max-width: none; flex: 1; min-width: 0; &:focus { box-shadow: none; } }
     .prefixed-input-label {
         padding: 4px 8px;
         font-size: 12px;
