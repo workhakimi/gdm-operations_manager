@@ -1879,7 +1879,7 @@ $font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-seri
     tr:last-child td { border-bottom: none; }
 }
 .batch-first td { border-top: 2px solid var(--c-batch-sep, $gray-200); }
-.batch-header-row td { padding: 6px 10px; background: $gray-100; border-bottom: 1px solid $gray-200; text-align: right; }
+.batch-header-row td { padding: 6px 10px; background: $gray-100; border-bottom: 1px solid $gray-200; text-align: left; }
 .batch-total-qty { font-size: 11px; font-weight: 700; color: #334155; margin-right: 6px; }
 .batch-type-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; background: #e2e8f0; padding: 2px 8px; border-radius: 3px; }
 .batch-booking-label { font-size: 10px; color: #94a3b8; margin-left: 8px; font-weight: 400; }
