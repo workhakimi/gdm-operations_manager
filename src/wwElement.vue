@@ -954,7 +954,7 @@ export default {
                 label: d.label || '', deliverytype: d.deliverytype || 'Klang Valley',
                 address: d.address || '', remarks: d.remarks || '',
                 pic_name: d.pic_name || '', pic_phone: d.pic_phone || '',
-                deadline: d.deadline ? d.deadline.slice(0, 16) : '',
+                deadline: _toKLInput(d.deadline),
                 _existingHeaderid: d.headerid || null,
             }));
 
@@ -1108,6 +1108,20 @@ export default {
                 description: description,
                 connection: h?.id || null,
             };
+        }
+
+        function _toKLInput(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return typeof iso === 'string' ? iso.slice(0, 16) : '';
+            const parts = d.toLocaleString('en-GB', {
+                timeZone: 'Asia/Kuala_Lumpur',
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', hour12: false
+            });
+            const m = parts.match(/(\d{2})\/(\d{2})\/(\d{4}),\s*(\d{2}):(\d{2})/);
+            if (!m) return typeof iso === 'string' ? iso.slice(0, 16) : '';
+            return `${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}`;
         }
 
         function _fmtDate(iso) {
